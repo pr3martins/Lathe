@@ -7,11 +7,11 @@ logger = get_logger(__name__)
 class DatabaseIter:
     def __init__(self, showLog=True):
         self.config = ConfigHandler()
-        
+
         self.conn_string = "host='{}' dbname='{}' user='{}' password='{}'".format(\
             config.connection['host'], config.connection['database'], \
             config.connection['user'], config.connection['password'])
-        
+
         self.table_hash = self._get_indexable_schema_elements()
         self.showLog = showLog
         self.stop_words = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
