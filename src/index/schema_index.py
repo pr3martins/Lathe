@@ -1,0 +1,4 @@
+
+
+class SchemaIndex(dict):
+    pass
