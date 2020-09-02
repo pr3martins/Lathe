@@ -40,21 +40,23 @@ class ConfigHandler:
 
         if ConfigHandler.__instance is None or reset:
             #reading general config
-            config_path = '/'.join(__file__.split('/')[:-1] + ['config.json'])
+            config_partial_path = os.path.abspath(__file__).split('/')[:-3] + ['config']
+            config_path = '/'.join(config_partial_path + ['config.json'])
             config_file = open(config_path, 'r')
             ConfigHandler.__instance = json.load(config_file)
             ConfigHandler.__instance.setdefault('table_file', None)
 
             #getting the specific dataset configuration
-            dataset_config = database if database != '' else ConfigHandler.__instance['databaseConfig']
-            dataset_config_path = '/'.join(__file__.split('/')[:-1] \
+            dataset_config = database if database != '' else ConfigHandler.__instance['database_config']
+            dataset_config_path = '/'.join(config_partial_path \
                 + ['{}_config.json'.format(dataset_config.lower())])
 
-            config_specfic_file = open(dataset_config_path, 'r')
-            ConfigHandler.__instance['connection']['database'] = config_database_file['database_name']
-            del config_database_file['database_name']
+            config_specific_file = json.load(open(dataset_config_path, 'r'))
+            
+            ConfigHandler.__instance['connection']['database'] = config_specific_file['database_name']
+            del config_specific_file['database_name']
 
-            ConfigHandler.__instance.update(json.load(config_database_file))
+            ConfigHandler.__instance.update(config_specific_file)
             ConfigHandler.__instance['logging_mode'] = \
                 debug_mapping[ConfigHandler.__instance['logging_mode']]
             print(ConfigHandler.__instance)

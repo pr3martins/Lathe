@@ -4,7 +4,9 @@ import shelve
 from math import log1p, sqrt
 
 from .babel_hash import BabelHash
+from utils import get_logger
 
+logger = get_logger(__file__)
 class ValueIndex(dict):
 
     def __init__(self,*args):
@@ -29,10 +31,10 @@ class ValueIndex(dict):
         return len(self[word][table][attribute])
 
     def frequencies_iafs(self):
-        for word in self.value_index:
-            iaf = self.value_index.get_iaf(word)
-            for table in self.value_index[word]:
-                for attribute, ctids in self.value_index[word][table].items():
+        for word in self:
+            iaf = self.get_iaf(word)
+            for table in self[word]:
+                for attribute, ctids in self[word][table].items():
                     frequency = len(ctids)
                     yield table,attribute,frequency,iaf
 

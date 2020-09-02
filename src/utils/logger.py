@@ -4,7 +4,7 @@ from .config_handler import ConfigHandler
 def get_logger(name):
 	
 	config = ConfigHandler()
-	logging.basicConfig(level=config.loggingMode)
+	logging.basicConfig(level=config.logging_mode)
 
 	logger = logging.getLogger(name)
 	#command_handler = logging.StreamHandler()

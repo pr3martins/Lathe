@@ -3,12 +3,11 @@ import itertools
 import numpy as np
 from nltk.stem import WordNetLemmatizer
 from utils import ConfigHandler
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import wordnet as wn
 
 
 class Similarity:
-    
-    def __init__(self):
-   
     def __init__(self, model, valueIndex ,schemaGraph):
         
         self.config = ConfigHandler()
@@ -43,11 +42,7 @@ class Similarity:
     def embedding10_similarity(self,word,table,column='*',Emb='B'):
         wnl = WordNetLemmatizer()
         
-        #print(self.EmbA[table].keys())
-        # Os sinônimos do EmbA também são utilizados por todos
-        #sim_list = self.EmbA[table].get(column, {})
         sim_list = {}
-        #print(self.EmbA.keys())
         for word_item in self.EmbA[table].get(column, {}):
             sim_list[word_item] = self.EmbA[table][column][word_item]
 
@@ -65,7 +60,6 @@ class Similarity:
 
             elif Emb == 'C':
                 if column in self.EmbC[table].keys():
-                    print 'in', table, column, self.EmbC[table][column]
                     for word_item in self.EmbC[table][column]:
                         if word_item in sim_list and \
                             self.EmbC[table][column][word_item] > sim_list[word_item]:
@@ -76,7 +70,6 @@ class Similarity:
         sim = 0.0
         
         if word in sim_list or wnl.lemmatize(word) in sim_list:
-            #print(sim_list[word])
             sim = max([sim_list.get(word, 0.0), sim_list.get(wnl.lemmatize(word), 0.0)])
 
 
@@ -116,7 +109,6 @@ class Similarity:
             sim_list.append(self.embedding10_similarity(word,table,column,emb10_sim))
         
         max_sim_list = sim_list[:]
-        #print(max_sim_list)
         max_sim_list.sort(key=lambda x: x, reverse=True)
         
         sim = max_sim_list[0]
@@ -124,8 +116,6 @@ class Similarity:
         if get_average:
             sim = (max_sim_list[0] + max_sim_list[1]) / 2.     
         
-        #print(word, table, column, max_sim_list)
-        #sim =2*sim_list[0] + 0.7*sim_list[-1] + 0.3*sim_list[1] + 2*sim_list[0]
         return sim
     
     def __getSimilarSet(self,words, inputType = 'word'):
@@ -184,7 +174,7 @@ class Similarity:
              
                 if len(processed_column) == 1:
                     is_case, column_indexes = is_camel_case(column)
-                    #print(column, is_case, column_indexes)
+
                     if is_case:
                         all_column_names = [column]
                         column_indexes = [0] + column_indexes + [len(column)]
@@ -214,7 +204,6 @@ class Similarity:
                 if len(processed_column) > 0:
                 
                     similar_vector_set = self.__getSimilarSet(processed_column) #| similar_vector_set
-                    #print([(t,c) for c in processed_column for t in all_table_names])
                     similar_set = self.__getSimilarSet( [(t,c) for c in processed_column for t in all_table_names] ) #| similar_set
                     word_vec=self.model[simple_column]/len(processed_column)
                     sum_vec =None
@@ -227,7 +216,6 @@ class Similarity:
 
                     avg_vec = ((sum_vec)*weight + word_vec*(1-weight))
                     similar_numpy_set = self.__getSimilarSet([avg_vec], inputType = 'vector')
-                    #print(similar_vector_set, similar_set)
                     
 
                 self.EmbB[table][column]=similar_set

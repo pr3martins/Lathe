@@ -9,8 +9,8 @@ class DatabaseIter:
         self.config = ConfigHandler()
 
         self.conn_string = "host='{}' dbname='{}' user='{}' password='{}'".format(\
-            config.connection['host'], config.connection['database'], \
-            config.connection['user'], config.connection['password'])
+            self.config.connection['host'], self.config.connection['database'], \
+            self.config.connection['user'], self.config.connection['password'])
 
         self.table_hash = self._get_indexable_schema_elements()
         self.showLog = showLog

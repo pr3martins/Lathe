@@ -9,7 +9,7 @@ class IndexHandler:
         self.config = ConfigHandler()
 
     def create_indexes(self):
-        if not self.config.createIndex:
+        if not self.config.create_index:
             return
 
         database_iter = DatabaseIter()
@@ -23,7 +23,7 @@ class IndexHandler:
         self.schema_index.process_frequency_metrics()
         num_total_attributes = self.schema_index.get_number_of_attributes()
         self.value_index.process_iaf(num_total_attributes)
-        self.schema_index.process_norms_of_attributes()
+        self.schema_index.process_norms_of_attributes(self.value_index.frequencies_iafs())
 
     def dump_indexes(self,value_index_filename,schema_index_filename):
         self.value_index.persist_to_shelve(value_index_filename)

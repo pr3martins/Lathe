@@ -7,6 +7,7 @@ class KeywordMatchHandler:
         self.config = ConfigHandler()
 
     def VKMGen(Q,value_index,**kwargs):
+        
         ignored_tables = kwargs.get('ignored_tables',[])
         ignored_attributes = kwargs.get('ignored_attributes',[])
 
@@ -84,6 +85,7 @@ class KeywordMatchHandler:
 
     def SKMGen(Q,schema_index,similarities,**kwargs):
         ignored_tables = kwargs.get('ignored_tables',[])
+        ignored_attributes = kwargs.get('ignored_attributes',[])
         threshold = kwargs.get('threshold',1)
         keyword_matches_to_ignore = kwargs.get('keyword_matches_to_ignore',set())
 
@@ -96,7 +98,7 @@ class KeywordMatchHandler:
 
                 for attribute in ['*']+list(schema_index[table].keys()):
 
-                    if(attribute=='id'):
+                    if attribute=='id' or  (table,attribute) in ignored_attributes:
                         continue
 
                     sim = similarities.word_similarity(keyword,table,attribute)

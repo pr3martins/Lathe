@@ -1,6 +1,9 @@
-from index.value_index import *
+import sys
+sys.path.append('../')
+
+from index import ValueIndex, BabelHash
 from pprint import pprint as pp
-filename = 'assets/persistent_indexes/value_index.shelve'
+filename = 'value_index.shelve'
 
 x=ValueIndex()
 x.add_mapping('word','table','attribute','ctid')

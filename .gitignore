@@ -2,3 +2,5 @@
 venv3
 .vscode
 **/__pycache__
+data
+config
