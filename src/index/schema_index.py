@@ -21,34 +21,15 @@ class SchemaIndex(dict):
                 metrics['max_frequency']=0
                 metrics['num_distinct_words']=0
                 metrics['num_words']=0
-                
-                max_frequency = 0
-                
+
                 for word, frequency in metrics['frequencies'].items():
-                    metrics['num_distinct_words'] += 1 
-                    if frequency >  metrics['max_frequency']:
-                         metrics['max_frequency'] = frequency
-                    metrics['num_words'] +=1 
-                    
-        #TODO: paulo needs to check why we need to write on this method
-        # with shelve.open(filename) as storage:
-        #     for key,value in self.items():
-        #         storage[key]=value
-    
-    @staticmethod
-    def load_from_shelve(self,filename,**kwargs):
-        with shelve.open(filename,flag='r') as storage:
-            for keyword in kwargs.get('keywords',storage.keys()):
-                try:
-                    self._s1et_underlying_item(keyword,storage[keyword])
-                except KeyError:
-                    continue
+                    metrics['num_distinct_words'] += 1
                     metrics['num_words'] += frequency
 
-                    if frequency > metrics['max_frequency']:
-                        metrics['max_frequency'] = frequency
+                    if frequency >  metrics['max_frequency']:
+                         metrics['max_frequency'] = frequency
 
-    
+
     def clear_frequencies(self):
         for table in self:
             for attribute in self[table]:
@@ -64,7 +45,7 @@ class SchemaIndex(dict):
             max_frequency = self[table][attribute]['max_frequency']
             term_frequency = (frequency * 1.0 / max_frequency * 1.0)
             self[table][attribute]['norm'] = prev_norm + (term_frequency*iaf)**2
-                
+
 
         for table in self:
             for attribute in self[table]:
@@ -76,7 +57,7 @@ class SchemaIndex(dict):
         with shelve.open(filename) as storage:
             for key,value in self.items():
                 storage[key]=value
-                
+
     @staticmethod
     def load_from_shelve(filename):
         schema_index = SchemaIndex()
