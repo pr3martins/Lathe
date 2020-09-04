@@ -5,17 +5,17 @@ from nltk.stem import WordNetLemmatizer
 from utils import ConfigHandler
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
+from utils import get_logger
 
-
+logger = get_logger(__name__)
 class Similarity:
-    def __init__(self, model, valueIndex ,schemaGraph):
+    def __init__(self, schema_index):
         
         self.config = ConfigHandler()
-        self.model = model
-        self.attributeHash = attributeHash
-        self.schemaGraph = schemaGraph
+        self.schema_index = schema_index
         
-        self.loadEmbeddingHashes()
+        #TODO: Embbedings are out of this test
+        #self.loadEmbeddingHashes()
     
     
     def wordnet_similarity(self,wordA,wordB):
@@ -85,7 +85,7 @@ class Similarity:
     def word_similarity(self,word,table,column = '*',
                     wn_sim=True, 
                     jaccard_sim=True,
-                    emb_sim=True,
+                    emb_sim=False,
                     emb10_sim='B',
                     get_average=True):
         sim_list=[]
@@ -101,17 +101,18 @@ class Similarity:
         if jaccard_sim:
             sim_list.append( self.jaccard_similarity(schema_term,word) )
 
-        if emb_sim:
-            sim_list.append( self.embedding_similarity(schema_term,word) )
+        # if emb_sim:
+        #     sim_list.append( self.embedding_similarity(schema_term,word) )
 
                 
-        if emb10_sim:
-            sim_list.append(self.embedding10_similarity(word,table,column,emb10_sim))
+        # if emb10_sim:
+        #     sim_list.append(self.embedding10_similarity(word,table,column,emb10_sim))
         
         max_sim_list = sim_list[:]
         max_sim_list.sort(key=lambda x: x, reverse=True)
         
         sim = max_sim_list[0]
+        logger.debug('Similarity between {}. {} and {}: {}'.format(table, column, word, sim))
         
         if get_average:
             sim = (max_sim_list[0] + max_sim_list[1]) / 2.     

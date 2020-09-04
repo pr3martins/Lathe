@@ -7,14 +7,15 @@ logger = get_logger(__name__)
 class IndexHandler:
     def __init__(self):
         self.config = ConfigHandler()
+        self.value_index = ValueIndex()
+        self.schema_index = SchemaIndex()
 
     def create_indexes(self):
         if not self.config.create_index:
             return
 
         database_iter = DatabaseIter()
-        self.value_index = ValueIndex()
-        self.schema_index = SchemaIndex()
+        
 
         for table,ctid,attribute, word in database_iter:
             self.value_index.add_mapping(word,table,attribute,ctid)

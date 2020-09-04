@@ -1,12 +1,15 @@
 from .keyword_match import KeywordMatch
 from utils import ConfigHandler,get_logger
+from utils import Similarity
+import itertools
 
 logger = get_logger(__name__)
 class KeywordMatchHandler:
-    def __init__(self):
+    def __init__(self, similarity):
         self.config = ConfigHandler()
+        self.similarities = similarity
 
-    def VKMGen(Q,value_index,**kwargs):
+    def value_keyword_match_generator(self, Q,value_index,**kwargs):
 
         ignored_tables = kwargs.get('ignored_tables',[])
         ignored_attributes = kwargs.get('ignored_attributes',[])
@@ -21,6 +24,7 @@ class KeywordMatchHandler:
 
         #Part 1: Find sets of tuples containing each keyword
         P = {}
+        logger.debug("Processing keyword values")
         for keyword in Q:
             if keyword not in value_index:
                 continue
@@ -37,19 +41,19 @@ class KeywordMatchHandler:
                     P[vkm] = set(ctids)
 
         #Part 2: Find sets of tuples containing larger termsets
-        TSInterMartins(P)
+        self.tupleset_iterator(P)
 
         #Part 3: Ignore tuples
         return set(P)
 
-    def TSInterMartins(P):
+    def tupleset_iterator(self, P):
         #Input: A Set of non-empty tuple-sets for each keyword alone P
         #Output: The Set P, but now including larger termsets (process Intersections)
 
         '''
         Termset is any non-empty subset K of the terms of a query Q
         '''
-
+        
         for ( vkm_i , vkm_j ) in itertools.combinations(P,2):
 
 
@@ -80,17 +84,17 @@ class KeywordMatchHandler:
                     if len(P[vkm_j])==0:
                         del P[vkm_j]
 
-                    return TSInterMartins(P)
+                    return self.tupleset_iterator(P)
         return {}
 
-    def SKMGen(Q,schema_index,similarities,**kwargs):
+    def schema_keyword_match_generator(self, Q, schema_index,**kwargs):
         ignored_tables = kwargs.get('ignored_tables',[])
         ignored_attributes = kwargs.get('ignored_attributes',[])
         threshold = kwargs.get('threshold',0.8)
         keyword_matches_to_ignore = kwargs.get('keyword_matches_to_ignore',set())
 
         S = set()
-
+        logger.debug("Processing schema matches")
         for keyword in Q:
             for table in schema_index:
                 if table in ignored_tables:
@@ -101,7 +105,7 @@ class KeywordMatchHandler:
                     if attribute=='id' or  (table,attribute) in ignored_attributes:
                         continue
 
-                    sim = similarities.word_similarity(keyword,table,attribute)
+                    sim = self.similarities.word_similarity(keyword,table,attribute)
 
                     if sim >= threshold:
                         skm = KeywordMatch(table,schema_filter={attribute:{keyword}})

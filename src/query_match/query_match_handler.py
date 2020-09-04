@@ -1,13 +1,12 @@
 import  itertools
 from pprint import pprint as pp
-from .similarity import Similarities
 import time
 import re
 from math import log
-from config import ConfigHandler
-from config import get_logger
+from utils import ConfigHandler
+from utils import get_logger
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 class QueryMatchHandler:
     
@@ -30,7 +29,7 @@ class QueryMatchHandler:
         
             new_u = set().union(*new_u)
         
-            if new_u == set(Q):
+            if new_u == set(keyword_query):
                 return False
     
     
@@ -43,7 +42,7 @@ class QueryMatchHandler:
         self.query_matches = []
         for i in range(1,len(keyword_query)+1):
             for candidate_match in itertools.combinations(keyword_matches,i): 
-                    
+                logger.debug("candidate match: {}".format(candidate_match))   
                 if self.has_minimal_cover(candidate_match,keyword_query):
                     M = self.find_query_match(set(candidate_match))
                     

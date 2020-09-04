@@ -19,7 +19,7 @@ class QueryMatch:
     def calculate_total_score(self, value_index, schema_index, similarity, log_mode=False):
         
         has_value_terms = self.calculate_value_score(value_index, schema_index)    
-        has_schema_terms self.calculate_schema_score(schema_index, similarity)
+        has_schema_terms = self.calculate_schema_score(schema_index, similarity)
         
         if has_value_terms:
             if log_mode:
@@ -34,9 +34,9 @@ class QueryMatch:
                 self.total_score *= self.value_score
         
         if log_score:
-                score += log(1) - log(len(table_set))
-            else:
-                score *= 1./ (1. * len(table_set)) 
+            score += log(1) - log(len(table_set))
+        else:
+            score *= 1./ (1. * len(table_set)) 
         
     def calculate_schema_score(self,schema_index, similarity,split_text=False):
         has_schema_terms = False
@@ -45,8 +45,8 @@ class QueryMatch:
             schemasum = 0
 
             pattern = re.compile('[_,-]')
-            attributes = if not split_text [attribute] else pattern.split(attribute)
-            tables = if not split_text [table] else else pattern.split(tables)
+            attributes =  [attribute] if not split_text else pattern.split(attribute)
+            tables = [table] if not split_text else pattern.split(tables)
 
             max_sim = 0
             for term in schemaWords:
