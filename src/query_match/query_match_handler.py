@@ -5,6 +5,8 @@ import re
 from math import log
 from utils import ConfigHandler
 from utils import get_logger
+from keyword_match import KeywordMatch
+from .query_match import QueryMatch
 
 logger = get_logger(__name__)
 
@@ -36,18 +38,50 @@ class QueryMatchHandler:
         return is_total
 
 
-    def generate_query_matches(self, keyword_query,keyword_matches):
+    def generate_query_matches(self, keyword_query,keyword_matches, **kwargs):
         #Input:  A keyword query Q, The set of non-empty non-free tuple-sets Rq
         #Output: The set Mq of query matches for Q
+        max_qm_size = kwargs.get('max_qm_size',3)
         self.query_matches = []
-        for i in range(1,len(keyword_query)+1):
+        for i in range(1,max(len(keyword_query), max_qm_size)+1):
             for candidate_match in itertools.combinations(keyword_matches,i): 
                 logger.debug("candidate match: {}".format(candidate_match))   
                 if self.has_minimal_cover(candidate_match,keyword_query):
-                    M = self.find_query_match(set(candidate_match))
+                    merged_query_match = self.merge_schema_filters(candidate_match)
                     
-                    query_match = QueryMatch(matches=candidate_match)
-                    self.query_matches.append(candidate_match)
+                    query_match = QueryMatch(matches=merged_query_match)
+                    
+                    #TODO: checking user group
+                    self.query_matches.append(query_match)
+    
+    
+    def merge_schema_filters(self, query_matches):
+        table_hash={}
+        for keyword_match in query_matches:
+            joint_schema_filter,value_keyword_matches = table_hash.setdefault(keyword_match.table,({},set()))
+
+            for attribute, keywords in keyword_match.schema_filter:
+                joint_schema_filter.setdefault(attribute,set()).update(keywords)
+
+            if len(keyword_match.value_filter) > 0:
+                value_keyword_matches.add(keyword_match)
+        
+        merged_qm = set()
+        for table,(joint_schema_filter,value_keyword_matches) in table_hash.items():    
+            if len(value_keyword_matches) > 0:
+                joint_value_filter = {attribute:keywords 
+                                    for attribute,keywords in value_keyword_matches.pop().value_filter}
+            else:
+                joint_value_filter={}
+
+            joint_keyword_match = KeywordMatch(table,
+                                            value_filter=joint_value_filter,
+                                            schema_filter=joint_schema_filter)
+
+            merged_qm.add(joint_keyword_match)
+            merged_qm.update(value_keyword_matches) 
+
+        return merged_qm
     
         
     def find_query_match(self, candidate_match):  
@@ -71,10 +105,4 @@ class QueryMatchHandler:
                 
         self.query_matches.sort(key=lambda query_match: query_match.total_score,reverse=True)
 
-        for rank_item in query_matches[:10]:    
-            logger.debug('--------------------')
-            logger.debug(rank_item)
-        logger.debug('--------------------')
-
-            
-        return Ranking
+        
