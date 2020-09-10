@@ -1,8 +1,10 @@
 import shelve
 import gc
 import math
-from .babel_hash import BabelHash
+
 from utils import get_logger
+
+from .babel_hash import BabelHash
 
 logger = get_logger(__file__)
 class SchemaIndex(dict):

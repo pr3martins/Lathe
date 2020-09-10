@@ -1,10 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import shelve
 from math import log1p, sqrt
+from random import sample
+
+from utils import get_logger
 
 from .babel_hash import BabelHash
-from utils import get_logger
 
 logger = get_logger(__file__)
 class ValueIndex(dict):
@@ -63,7 +63,13 @@ class ValueIndex(dict):
     def load_from_shelve(filename,**kwargs):
         value_index = ValueIndex()
         with shelve.open(filename,flag='r') as storage:
-            for keyword in kwargs.get('keywords',storage.keys()):
+            keywords = kwargs.get('keywords',storage.keys())
+            sample_size = kwargs.get('sample_size',0)
+
+            if sample_size > 0:
+                keywords = sample(keywords, k = sample_size)
+
+            for keyword in keywords:
                 try:
                     value_index._set_underlying_item(keyword,storage[keyword])
                 except KeyError:

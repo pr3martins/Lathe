@@ -1,6 +1,8 @@
+import string
+
 import psycopg2
 from psycopg2 import sql
-import string
+
 from utils import ConfigHandler, get_logger
 
 logger = get_logger(__name__)
