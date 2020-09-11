@@ -35,13 +35,13 @@ class CandidateNetworkHandler:
             print('FM')
             pp(query_match)
 
-        CN = CandidateNetwork()
-        CN.add_vertex(query_match.get_random_keyword_match())
+        prev_candidate_network = CandidateNetwork()
+        prev_candidate_network.add_vertex(query_match.get_random_keyword_match())
 
         if len(query_match)==1:
             if non_empty_only:
                 sql = get_sql_from_cn(schema_graph,
-                                         CN,
+                                         prev_candidate_network,
                                          rowslimit=1)
 
                 non_empty = exec_sql(conn_string,
@@ -51,7 +51,7 @@ class CandidateNetworkHandler:
 
             if non_empty_only and non_empty==False:
                 return {}
-            return {CN}
+            return {prev_candidate_network}
 
         returned_cns = list()
         ignored_cns = list()
@@ -61,10 +61,10 @@ class CandidateNetworkHandler:
             table_hash.setdefault(keyword_match.table,set()).add(keyword_match)
 
         F = deque()
-        F.append(CN)
+        F.append(prev_candidate_network)
 
         while F:
-            CN = F.popleft()
+            prev_candidate_network = F.popleft()
 
             for vertex_u in CN.vertices():
                 keyword_match,alias = vertex_u
@@ -78,35 +78,35 @@ class CandidateNetworkHandler:
                     if adj_table in table_hash:
                         for adj_keyword_match in table_hash[adj_table]:
 
-                            if adj_keyword_match not in CN.keyword_matches():
+                            if adj_keyword_match not in prev_candidate_network.keyword_matches():
 
-                                new_CN = deepcopy(CN)
-                                vertex_v = new_CN.add_vertex(adj_keyword_match)
-                                new_CN.add_edge(vertex_u,vertex_v,edge_direction=direction)
+                                cur_candidate_network = deepcopy(prev_candidate_network)
+                                vertex_v = cur_candidate_network.add_vertex(adj_keyword_match)
+                                cur_candidate_network.add_edge(vertex_u,vertex_v,edge_direction=direction)
 
-                                if (new_CN not in F and
-                                    new_CN not in returned_cns and
-                                    new_CN not in ignored_cns and
-                                    len(new_CN)<=max_cn_size and
-                                    new_CN.is_sound() and
-                                    len(list(new_CN.leaves())) <= len(query_match) and
-                                    new_CN.num_free_keyword_matches()+len(query_match) <= max_cn_size
+                                if (cur_candidate_network not in F and
+                                    cur_candidate_network not in returned_cns and
+                                    cur_candidate_network not in ignored_cns and
+                                    len(cur_candidate_network)<=max_cn_size and
+                                    cur_candidate_network.is_sound() and
+                                    len(list(cur_candidate_network.leaves())) <= len(query_match) and
+                                    cur_candidate_network.num_free_keyword_matches()+len(query_match) <= max_cn_size
                                    ):
 
-                                    if new_CN.minimal_cover(query_match):
+                                    if cur_candidate_network.minimal_cover(query_match):
 
                                         if non_empty_only == False:
 
                                             current_time = timer()
                                             gns_elapsed_time.append(current_time-start_time)
 
-                                            returned_cns.append(new_CN)
+                                            returned_cns.append(cur_candidate_network)
 
-                                            if new_CN == desired_cn:
+                                            if cur_candidate_network == desired_cn:
                                                 return returned_cns
                                         else:
                                             sql = get_sql_from_cn(schema_graph,
-                                                                     new_CN,
+                                                                     cur_candidate_network,
                                                                      rowslimit=1)
 
                                             non_empty = exec_sql(conn_string,
@@ -117,32 +117,32 @@ class CandidateNetworkHandler:
                                                 current_time = timer()
                                                 gns_elapsed_time.append(current_time-start_time)
 
-                                                returned_cns.append(new_CN)
+                                                returned_cns.append(cur_candidate_network)
 
-                                                if new_CN == desired_cn:
+                                                if cur_candidate_network == desired_cn:
                                                     return returned_cns
                                             else:
-                                                ignored_cns.append(new_CN)
+                                                ignored_cns.append(cur_candidate_network)
 
 
                                         if len(returned_cns)>=topk_cns_per_qm:
                                             return returned_cns
 
-                                    elif len(new_CN)<max_cn_size:
-                                        F.append(new_CN)
+                                    elif len(cur_candidate_network)<max_cn_size:
+                                        F.append(cur_candidate_network)
 
 
-                    new_CN = deepcopy(CN)
+                    cur_candidate_network = deepcopy(prev_candidate_network)
                     adj_keyword_match = KeywordMatch(adj_table)
-                    vertex_v = new_CN.add_vertex(adj_keyword_match)
-                    new_CN.add_edge(vertex_u,vertex_v,edge_direction=direction)
-                    if (new_CN not in F and
-                        len(new_CN)<max_cn_size and
-                        new_CN.is_sound() and
-                        len(list(new_CN.leaves())) <= len(query_match) and
-                        new_CN.num_free_keyword_matches()+len(query_match) <= max_cn_size
+                    vertex_v = cur_candidate_network.add_vertex(adj_keyword_match)
+                    cur_candidate_network.add_edge(vertex_u,vertex_v,edge_direction=direction)
+                    if (cur_candidate_network not in F and
+                        len(cur_candidate_network)<max_cn_size and
+                        cur_candidate_network.is_sound() and
+                        len(list(cur_candidate_network.leaves())) <= len(query_match) and
+                        cur_candidate_network.num_free_keyword_matches()+len(query_match) <= max_cn_size
                        ):
-                        F.append(new_CN)
+                        F.append(cur_candidate_network)
 
         return returned_cns
 
@@ -183,17 +183,17 @@ class CandidateNetworkHandler:
                 pp(Cns)
 
 
-            for i,Cn in enumerate(Cns):
-                if(Cn not in generated_cns):
+            for i,candidate_network in enumerate(Cns):
+                if(candidate_network not in generated_cns):
                     if num_cns_available<=0:
                         break
 
-                    generated_cns.append(Cn)
+                    generated_cns.append(candidate_network)
 
                     #Dividindo score pelo tamanho da cn (SEGUNDA PARTE DO RANKING)
-                    cn_score = qm_score/len(Cn)
+                    cn_score = qm_score/len(candidate_network)
 
-                    un_ranked_cns.append( (Cn,cn_score) )
+                    un_ranked_cns.append( (candidate_network,cn_score) )
 
                     num_cns_available -=1
 
