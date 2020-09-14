@@ -18,8 +18,10 @@ class IndexHandler:
         
 
         for table,ctid,attribute, word in database_iter:
-            self.value_index.add_mapping(word,table,attribute,ctid)
-            self.schema_index.increment_frequency(word,table,attribute)
+            if table not in self.config.remove_from_index:
+                self.value_index.add_mapping(word,table,attribute,ctid)
+                self.schema_index.increment_frequency(word,table,attribute)
+                
 
         self.schema_index.process_frequency_metrics()
         num_total_attributes = self.schema_index.get_number_of_attributes()
