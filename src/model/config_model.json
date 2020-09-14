@@ -1,0 +1,9 @@
+{
+	"connection":{
+		"host": "",
+        "user":"",
+        "password": ""
+	},
+	"database_config" :"",
+   	"logging_mode": ""
+}

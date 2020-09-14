@@ -1,0 +1,17 @@
+[{
+    "id":1,
+    "natural_language_query" : "return me the abstract of \"Making Database Systems Usable\"",
+    "sql_query": "SELECT publication.abstract where publication.title = \"Making Database System Usable\"",
+    "segments": ["abstract", "making database system usable"],
+    "query_match" : [{
+        "table": "publication",
+        "schema_filter":[{
+            "keywords": ["abstract"],
+            "attribute": "abstract"
+        }],
+        "value_filter": [{
+            "keywords": ["Making Database System Usable"],
+            "attribute": "title"
+        }]
+    }]
+}]

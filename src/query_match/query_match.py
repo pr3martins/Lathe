@@ -115,6 +115,9 @@ class QueryMatch:
     
     
     def __str__(self):
-        return  'query_match : {}\ntotal_score: {}\nschema_score: {}\n:value_score: {}'.format(\
-            ','.join(self.matches),self.total_score, self.schema_score, self.value_score)
+        return  '{query_match : {}\ntotal_score: {}\nschema_score: {}\n:value_score: {}}'.format(\
+            self.matches,self.total_score, self.schema_score, self.value_score)
+        
+    def __repr__(self):
+        return self.__str__()
         

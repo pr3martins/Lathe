@@ -59,6 +59,6 @@ class ConfigHandler:
             ConfigHandler.__instance.update(config_specific_file)
             ConfigHandler.__instance['logging_mode'] = \
                 debug_mapping[ConfigHandler.__instance['logging_mode']]
-            print(ConfigHandler.__instance)
+            
 
         self.__dict__ = ConfigHandler.__instance

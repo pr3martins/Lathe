@@ -1,0 +1,19 @@
+{
+    "database": "<database_ame>",
+    "create_index": true,
+    "remove_from_index" : [],
+    "database_name":"mondial",
+    "schema_index_filename":"../../data/<schema_index>.shelve",
+    "value_index_filename":"../../data/<value_index>.shelve", 
+    "edges_file":"../../data/mondial_edges.json",
+    "evaluation":[{
+        "query_file" : "",
+        "experiment_parameters": {
+            "param0": "val0",
+            "param1": "val1",
+            "param2": "val2",
+            "param3": "val3"
+        }
+    }],
+    "default_evaluation_index" : 0
+}
