@@ -9,7 +9,32 @@ class IndexHandler:
         self.config = ConfigHandler()
         self.value_index = ValueIndex()
         self.schema_index = SchemaIndex()
+        self.word_histogram = {}
+        self.word_choices = ['', '']
 
+    def create_histogram(self):
+        max_count = -1
+        if not self.config.create_index:
+            return
+
+        database_iter = DatabaseIter()
+        
+        for table,ctid,attribute,word in database_iter:
+            if table not in self.config.remove_from_index:
+                vocab_item = self.word_histogram.setdefault(word, {})
+                count = vocab_item.setdefault('{}.{}'.format(table, attribute), 1) + 1
+                vocab_item[('{}.{}'.format(table, attribute)] = count + 1
+                
+                if count > max_count:
+                    max_count = count
+                    self.word_choices[0] = word
+                    self.word_choices[1] = '{}.{}'.format(table, attribute)
+        
+        
+                
+                
+        
+        
     def create_indexes(self):
         if not self.config.create_index:
             return
@@ -22,7 +47,7 @@ class IndexHandler:
                 self.value_index.add_mapping(word,table,attribute,ctid)
                 self.schema_index.increment_frequency(word,table,attribute)
                 
-
+        
         self.schema_index.process_frequency_metrics()
         num_total_attributes = self.schema_index.get_number_of_attributes()
         self.value_index.process_iaf(num_total_attributes)
