@@ -2,15 +2,21 @@ from .database_iter import DatabaseIter
 from .value_index import ValueIndex
 from .schema_index import SchemaIndex
 from utils import ConfigHandler,get_logger
-
+from ctypes import *
 logger = get_logger(__name__)
+
+
+class 
+
+
+
 class IndexHandler:
     def __init__(self):
         self.config = ConfigHandler()
         self.value_index = ValueIndex()
         self.schema_index = SchemaIndex()
-        self.word_histogram = {}
-        self.word_choices = ['', '']
+        self.vocab = {}
+       
 
     def create_histogram(self):
         max_count = -1
@@ -31,8 +37,33 @@ class IndexHandler:
                     self.word_choices[1] = '{}.{}'.format(table, attribute)
         
         
+        print(self.word_choices)        
                 
+    
+    def create_index_file(self):
+        tables = {}
+        attributes = {}
+        max_count = -1
+        max_elements = ['', '']
+        #first interaction, discover the number of tables, attributes, and vocabulary
+        database_iter = DatabaseIter()
+        for table, ctid, attribute,word in database_iter:
+            if table not in self.config.remove_from_index:
+                key = '{}.{}'.format(table, attribute)
+                tables.setdefault(table, len(tables))
+                attributes.setdefault(key, len(attributes.keys()))
                 
+                vocab_item = self.vocal.setdefault(word, {})
+                count = vocab.setdefault('{}.{}'.format(table, attribute), 1) + 1
+                vocab_item[('{}.{}'.format(table, attribute)] = count + 1
+                           
+                if count > max_count:
+                    max_count = count
+                    max_elements[0] = word
+                    max_elements[1] = '{}.{}'.format(table, attribute)
+        
+        
+        
         
         
     def create_indexes(self):
