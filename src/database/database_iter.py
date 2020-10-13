@@ -99,9 +99,14 @@ class DatabaseIter:
                                 sql.Identifier(table))
                             )
 
-                    for row in cur.fetchall():
-                        ctid = row[0]
-                        for col in range(1,len(row)):
-                            column = cur.description[col][0]
-                            for word in self._tokenize( str(row[col]) ):
-                                yield table,ctid,column, word
+                    arraysize = 10000
+                    while True:
+                        results = cur.fetchmany(arraysize)
+                        if not results:
+                            break
+                        for row in results:
+                            ctid = row[0]
+                            for col in range(1,len(row)):
+                                column = cur.description[col][0]
+                                for word in self._tokenize( str(row[col]) ):
+                                    yield table,ctid,column, word
