@@ -3,20 +3,17 @@ from .value_index import ValueIndex
 from .schema_index import SchemaIndex
 from utils import ConfigHandler,get_logger
 from ctypes import *
+import json
+
 logger = get_logger(__name__)
-
-
-class 
-
-
 
 class IndexHandler:
     def __init__(self):
         self.config = ConfigHandler()
         self.value_index = ValueIndex()
         self.schema_index = SchemaIndex()
-        self.vocab = {}
-       
+        self.vocab = []
+        self.vocal = {}
 
     def create_histogram(self):
         max_count = -1
@@ -24,12 +21,17 @@ class IndexHandler:
             return
 
         database_iter = DatabaseIter()
-        
+        print(self.config.remove_from_index)
+       
         for table,ctid,attribute,word in database_iter:
             if table not in self.config.remove_from_index:
-                vocab_item = self.word_histogram.setdefault(word, {})
-                count = vocab_item.setdefault('{}.{}'.format(table, attribute), 1) + 1
-                vocab_item[('{}.{}'.format(table, attribute)] = count + 1
+                if word not in vocab_set:
+                    vocab_set.add(word)
+
+                # vocab = []
+                # vocab_item = self.word_histogram.setdefault(word, {})
+                # count = vocab_item.setdefault('{}.{}'.format(table, attribute), 1)
+                # vocab_item['{}.{}'.format(table, attribute)] = count + 1
                 
                 if count > max_count:
                     max_count = count
@@ -42,37 +44,21 @@ class IndexHandler:
     
     def create_index_file(self):
         tables = {}
-        attributes = {}
-        max_count = -1
-        max_elements = ['', '']
+        #attributes = set()
         #first interaction, discover the number of tables, attributes, and vocabulary
         database_iter = DatabaseIter()
         for table, ctid, attribute,word in database_iter:
             if table not in self.config.remove_from_index:
-                key = '{}.{}'.format(table, attribute)
-                tables.setdefault(table, len(tables))
-                attributes.setdefault(key, len(attributes.keys()))
-                
-                vocab_item = self.vocal.setdefault(word, {})
-                count = vocab.setdefault('{}.{}'.format(table, attribute), 1) + 1
-                vocab_item[('{}.{}'.format(table, attribute)] = count + 1
-                           
-                if count > max_count:
-                    max_count = count
-                    max_elements[0] = word
-                    max_elements[1] = '{}.{}'.format(table, attribute)
+                idx = self.schema_index.add(table, attribute)
+                self.value_index.count_attributes(idx, word)
         
-        
-        
-        
+        self.value_index.create_file(len(self.schema_index.attributes))
         
     def create_indexes(self):
         if not self.config.create_index:
             return
 
         database_iter = DatabaseIter()
-        
-
         for table,ctid,attribute, word in database_iter:
             if table not in self.config.remove_from_index:
                 self.value_index.add_mapping(word,table,attribute,ctid)

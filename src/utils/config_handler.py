@@ -62,3 +62,18 @@ class ConfigHandler:
             
 
         self.__dict__ = ConfigHandler.__instance
+
+    def dump(self):
+        config_partial_path = os.path.abspath(__file__).split('/')[:-3] + ['config']
+        dataset_config_path = '/'.join(config_partial_path \
+            + ['{}_config.json'.format(self.database_config.lower())])
+
+        config_specific_file = json.load(open(dataset_config_path, 'r'))
+
+        config_specific_file['attribute_count'] = self.attribute_count
+        config_specific_file['max_ctids_count'] = self.max_ctids_count
+        config_specific_file['register_size'] = self.register_size
+
+        with open(dataset_config_path, 'w') as f:
+            json.dump(config_specific_file, f, indent=4)
+

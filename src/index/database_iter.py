@@ -65,11 +65,14 @@ class DatabaseIter:
                           AND c.table_schema = kcu.table_schema
                     WHERE
                         c.table_schema='public'
-                        AND tc.constraint_name IS NULL;
+                        AND tc.constraint_name IS NULL
                 '''
                 cur.execute(GET_TABLE_AND_COLUMNS_WITHOUT_FOREIGN_KEYS_SQL)
                 table_hash = {}
                 for table,column in cur.fetchall():
+                    if table in self.config.remove_from_index:
+                        continue
+
                     if column == '__search_id':
                         continue
                     table_hash.setdefault(table,[]).append(column)
@@ -96,10 +99,12 @@ class DatabaseIter:
                         .format(sql.SQL(', ').join(sql.Identifier(col) for col in indexable_columns),
                                 sql.Identifier(table))
                             )
-
-                    for row in cur.fetchall():
-                        ctid = row[0]
-                        for col in range(1,len(row)):
-                            column = cur.description[col][0]
-                            for word in self._tokenize( str(row[col]) ):
-                                yield table,ctid,column, word
+                    data = cur.fetchmany(1000)
+                    while len(data) != 0:
+                        for row in data:
+                            ctid = row[0]
+                            for col in range(1,len(row)):
+                                column = cur.description[col][0]
+                                for word in self._tokenize( str(row[col]) ):
+                                    yield table,ctid,column, word
+                        data = cur.fetchmany(1000)
