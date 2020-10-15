@@ -7,57 +7,57 @@ from utils import get_logger
 from .babel_hash import BabelHash
 
 logger = get_logger(__file__)
-class SchemaIndex(dict):
-    def __init__(self,*args):
-        dict.__init__(self,args)
+class SchemaIndex():
+    def __init__(self):
+        self._dict = {}
 
-    def increment_frequency(self,word,table,attribute):
-        self.setdefault(table,BabelHash()).setdefault(attribute,BabelHash()).setdefault('frequencies',BabelHash()).setdefault(word,0)
-        self[table][attribute]['frequencies'][word]+=1
+    def __iter__(self):
+        yield from self._dict.keys()
 
-    def process_frequency_metrics(self):
-        for table in self:
-            for attribute in self[table]:
-                metrics = self[table][attribute]
+    def __getitem__(self,word):
+        return self._dict[word]
 
-                metrics['max_frequency']=0
-                metrics['num_distinct_words']=0
-                metrics['num_words']=0
+    def __setitem__(self,key,value):
+        self._dict[key] = value
 
-                for word, frequency in metrics['frequencies'].items():
-                    metrics['num_distinct_words'] += 1
-                    metrics['num_words'] += frequency
+    def keys(self):
+        yield from self.__iter__()
 
-                    if frequency >  metrics['max_frequency']:
-                         metrics['max_frequency'] = frequency
+    def items(self):
+        for key in self.__iter__():
+            yield key, self.__getitem__(key)
 
+    def values(self):
+        for key in self:
+            yield self[key]
 
-    def clear_frequencies(self):
-        for table in self:
-            for attribute in self[table]:
-                del self[table][attribute]['frequencies']
-        gc.collect()
+    def create_entries(self,table_attributes):
+        for (table,attribute) in table_attributes:
+            self._dict.setdefault(table,{}).setdefault(attribute,{'max_frequency':0, 'norm':0.0})
 
-    def get_number_of_attributes(self):
+    def tables_attributes(self):
+        return {(table,attribute) for table in self for attribute in self[table]}
+
+    def get_num_total_attributes(self):
         return sum([len(attribute) for attribute in self.values()])
 
     def process_norms_of_attributes(self,frequencies_iafs):
-        for table,attribute,frequency,iaf in frequencies_iafs:
-            prev_norm = self[table][attribute].setdefault('norm',0)
-            max_frequency = self[table][attribute]['max_frequency']
-            term_frequency = (frequency * 1.0 / max_frequency * 1.0)
-            self[table][attribute]['norm'] = prev_norm + (term_frequency*iaf)**2
-
-
-        for table in self:
-            for attribute in self[table]:
-                prev_norm = self[table][attribute]['norm']
-                self[table][attribute]['norm'] = math.sqrt(prev_norm)
+        # for table,attribute,frequency,iaf in frequencies_iafs:
+        #     prev_norm = self[table][attribute].setdefault('norm',0)
+        #     max_frequency = self[table][attribute]['max_frequency']
+        #     term_frequency = (frequency * 1.0 / max_frequency * 1.0)
+        #     self[table][attribute]['norm'] = prev_norm + (term_frequency*iaf)**2
+        #
+        #
+        # for table in self:
+        #     for attribute in self[table]:
+        #         prev_norm = self[table][attribute]['norm']
+        #         self[table][attribute]['norm'] = math.sqrt(prev_norm)
         logger.info('NORMS OF ATTRIBUTES PROCESSED')
 
     def persist_to_shelve(self,filename):
         with shelve.open(filename) as storage:
-            for key,value in self.items():
+            for key,value in self._dict.items():
                 storage[key]=value
 
     @staticmethod

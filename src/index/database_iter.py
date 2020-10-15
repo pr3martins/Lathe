@@ -1,23 +1,20 @@
-import string
-import sys
+import re
 import psycopg2
 from psycopg2 import sql
-
+import string
 from utils import ConfigHandler, get_logger
 
 logger = get_logger(__name__)
 class DatabaseIter:
-    def __init__(self, database_table_columns, **kwargs):
-        self.database_table_columns=database_table_columns
-
-        self.limit_per_table = kwargs.get('limit_per_table', None)
-
+    def __init__(self, showLog=True):
         self.config = ConfigHandler()
+
         self.conn_string = "host='{}' dbname='{}' user='{}' password='{}'".format(\
             self.config.connection['host'], self.config.connection['database'], \
             self.config.connection['user'], self.config.connection['password'])
 
         self.table_hash = self._get_indexable_schema_elements()
+        self.showLog = showLog
         self.stop_words = ['i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you',
                            "you're", "you've", "you'll", "you'd", 'your', 'yours', 'yourself',
                            'yourselves', 'he', 'him', 'his', 'himself', 'she', "she's", 'her',
@@ -40,9 +37,14 @@ class DatabaseIter:
                            "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't",
                            'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won',
                            "won't", 'wouldn', "wouldn't"]
+        self.tokenizer = re.compile("\\W+")
+        self.url_match = re.compile(("^(https?://)?\\w+\.[\\w+\./\~\?\&]+$")
 
     def _tokenize(self,text):
-        tokenized = [word.strip(string.punctuation)
+        if self.url_match.search(text) is not None:
+            return [text]
+            
+        tokenized = [self.tokenizer.split(word.strip(string.punctuation))
                 for word in text.lower().split()
                 if word not in self.stop_words]
         return [token for token in tokenized if token != '']
@@ -69,13 +71,15 @@ class DatabaseIter:
                           AND c.table_schema = kcu.table_schema
                     WHERE
                         c.table_schema='public'
-                        AND tc.constraint_name IS NULL;
+                        AND tc.constraint_name IS NULL
                 '''
                 cur.execute(GET_TABLE_AND_COLUMNS_WITHOUT_FOREIGN_KEYS_SQL)
                 table_hash = {}
                 for table,column in cur.fetchall():
-                    if (table,column) not in self.database_table_columns:
-                        print(f'SKIPPED {(table,column)}')
+                    if table in self.config.remove_from_index:
+                        continue
+
+                    if column == '__search_id':
                         continue
                     table_hash.setdefault(table,[]).append(column)
                 return table_hash
@@ -96,29 +100,17 @@ class DatabaseIter:
                     NOTE: Table and columns can't be directly passed as parameters.
                     Thus, the sql.SQL command with sql.Identifiers is used
                     '''
-
-                    if self.limit_per_table is not None:
-                        text = (f"SELECT ctid, {{}} FROM {{}} LIMIT {self.limit_per_table};")
-                    else:
-                        text = ("SELECT ctid, {} FROM {};")
-
                     cur.execute(
-                        sql.SQL(text)
+                        sql.SQL("SELECT ctid, {} FROM {};")
                         .format(sql.SQL(', ').join(sql.Identifier(col) for col in indexable_columns),
                                 sql.Identifier(table))
                             )
-
-                    arraysize = 100000
-                    while True:
-                        results = cur.fetchmany(arraysize)
-                        if not results:
-                            break
-                        for row in results:
+                    data = cur.fetchmany(1000)
+                    while len(data) != 0:
+                        for row in data:
                             ctid = row[0]
                             for col in range(1,len(row)):
                                 column = cur.description[col][0]
                                 for word in self._tokenize( str(row[col]) ):
-                                    #if len([ch for ch in word if ch in string.punctuation]) != 0:
-                                        #print(word)
-                                        #sys.exit()
                                     yield table,ctid,column, word
+                        data = cur.fetchmany(1000)

@@ -16,9 +16,21 @@ class DatabaseHandler:
             self.config.connection['host'], self.config.connection['database'], \
             self.config.connection['user'], self.config.connection['password'])
 
+    def get_tables_and_attributes(self):
+        with psycopg2.connect(self.conn_string) as conn:
+            with conn.cursor() as cur:
+                sql = '''
+                        SELECT table_name,column_name
+                        FROM information_schema.columns
+                        WHERE table_schema='public'
+                        ORDER by 1,2;
+                        '''
+                cur.execute(sql)
+                return cur.fetchall()
 
-    def iterate_over_keywords(self):
-        return DatabaseIter()
+    def iterate_over_keywords(self,schema_index):
+        database_table_columns=schema_index.tables_attributes()
+        return DatabaseIter(database_table_columns)
 
     def get_fk_constraints(self):
         with psycopg2.connect(self.conn_string) as conn:

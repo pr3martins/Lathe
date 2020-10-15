@@ -3,10 +3,16 @@
 # For a representation within the keys inserted by the setitem method,
 # it is recommended to use the methods from pprint or IPython.display modules.
 
-class BabelHash(dict):
+class BabelHash():
 
     babel = {}
-    __slots__ = ()
+    __slots__ = ('_dict')
+
+    def __init__(self, **kwargs):
+        self._dict = {}
+
+    def __len__(self):
+        return len(self._dict)
 
     def __getidfromkey__(self,key):
         return BabelHash.babel[key]
@@ -17,7 +23,7 @@ class BabelHash(dict):
 
     def __getitem__(self,key):
         key_id = self.__getidfromkey__(key)
-        return dict.__getitem__(self,key_id)
+        return self._dict[key_id]
 
     def __setitem__(self,key,value):
         try:
@@ -28,19 +34,15 @@ class BabelHash(dict):
             BabelHash.babel[key] = key_id
             BabelHash.babel[key_id] = key
 
-        dict.__setitem__(self, key_id,value)
+        self._dict[key_id] = value
 
     def __delitem__(self, key):
         key_id = self.__getidfromkey__(key)
-        dict.__delitem__(self, key_id)
+        self._dict.__delitem__(key_id)
 
     def __missing__(self,key):
         key_id = self.__getidfromkey__(key)
         return key_id
-
-    def __delitem__(self, key):
-        key_id = self.__getidfromkey__(key)
-        dict.__delitem__(self,key_id)
 
     def __contains__(self, key):
         try:
@@ -48,11 +50,15 @@ class BabelHash(dict):
         except KeyError:
             return False
 
-        return dict.__contains__(self,key_id)
+        return self._dict.__contains__(key_id)
 
     def __iter__(self):
-        for key_id in dict.keys(self):
+        for key_id in self._dict.keys():
             yield self.__getkeyfromid__(key_id)
+
+    def __repr__(self):
+        items = ','.join(f'{key}:{value}' for key,value in self.items())
+        return f'<BabelHash {{{items}}}>'
 
     def keys(self):
         yield from self.__iter__()
