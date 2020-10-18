@@ -13,7 +13,7 @@ from .value_index import ValueIndex
 from .schema_index import SchemaIndex
 from .schema_graph import SchemaGraph
 from .babel_hash import BabelHash
-
+import sys
 logger = get_logger(__name__)
 
 class IndexHandler:
@@ -106,6 +106,7 @@ class IndexHandler:
 
             for partial_value_index in partial_value_indexes:
                 babel.update(partial_value_index['__babel__'])
+            final_value_index['__babel__'] = babel
 
             for i in range( len(partial_value_indexes)):
                 print(f'i {i} {filenames[i]}')
@@ -166,8 +167,12 @@ class IndexHandler:
         self.schema_index.persist_to_shelve(schema_index_filename)
 
     def load_indexes(self,value_index_filename,schema_index_filename,**kwargs):
-        self.value_index = self.value_index.load_from_shelve(value_index_filename,**kwargs)
-        # self.schema_index = self.schema_index.load_from_shelve(schema_index_filename)
+        #self.value_index = self.value_index.load_from_shelve(value_index_filename,**kwargs)
+        self.schema_index = self.schema_index.load_from_shelve(schema_index_filename)
+        self.value_index.load_file(value_index_filename)
+        
+    def get_value_mappings(self, keyword):
+        return self.value_index.get_mappings_from_file(keyword)
 
     def create_schema_graph(self):
 

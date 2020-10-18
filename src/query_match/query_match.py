@@ -83,8 +83,6 @@ class QueryMatch:
 
                 # TODO colocar metrics = schema_index[table][attribute] e mencionar como dict parece mais limpo
                 norm = schema_index[table][attribute]['norm']
-                num_words = schema_index[table][attribute]['num_words']
-                num_distinct_words = schema_index[table][attribute]['num_distinct_words']
                 max_frequency  = schema_index[table][attribute]['max_frequency']
 
                 wsum = 0.0

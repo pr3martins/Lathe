@@ -11,7 +11,7 @@ indexHandler = IndexHandler()
 indexHandler.load_indexes(config.value_index_filename, config.schema_index_filename)
 similarity = Similarity(indexHandler.schema_index)
 
-query = ["continent", "europe"]
+query = ["vldb", "conference"]
 
 kwHandler = KeywordMatchHandler(similarity)
 skm_matches = kwHandler.schema_keyword_match_generator(query, indexHandler.schema_index)

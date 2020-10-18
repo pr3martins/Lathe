@@ -1,4 +1,5 @@
 import re
+import sys
 import psycopg2
 from psycopg2 import sql
 import string
@@ -42,12 +43,20 @@ class DatabaseIter:
 
     def _tokenize(self,text):
         if self.url_match.search(text) is not None:
-            return [text]
+            return ([text], True)
             
         tokenized = [self.tokenizer.split(word.strip(string.punctuation))
                 for word in text.lower().split()
                 if word not in self.stop_words]
-        return [token for token in tokenized if token != '']
+        
+        check_tokenized = []
+        for word in tokenized:
+            if len([ch for ch in word if ch in string.punctuation]) != 0:
+                check_tokenized += self.tokenizer.split(word)
+            else:
+                check_tokenized += [word]
+                
+        return ([token for token in check_tokenized if token != ''], False)
 
     def _schema_element_validator(self,table,column):
         return True
@@ -111,6 +120,10 @@ class DatabaseIter:
                             ctid = row[0]
                             for col in range(1,len(row)):
                                 column = cur.description[col][0]
-                                for word in self._tokenize( str(row[col]) ):
+                                (is_url, tokens) = self._tokenize( str(row[col]) )
+                                for word in tokens:
+                                    if len([ch for ch in word if ch in string.punctuation]) != 0 and not is_url:
+                                        print("Tokenizer not working {}".format(word, row[col]))
+                                        sys.exit()
                                     yield table,ctid,column, word
                         data = cur.fetchmany(1000)

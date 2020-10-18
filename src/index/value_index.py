@@ -21,7 +21,14 @@ class ValueIndex():
         return self[word][table][attribute]
 
     def get_iaf(self,key):
-        return self._dict[key][0]
+        item = None
+        if self.value_index_file_desc is not None:
+            with shelve.open(self.value_index_file_desc,flag='r') as storage:
+                item = storage[key]
+        else:
+            item = self._dict[key]
+
+        return item[0]
 
     def set_iaf(self,key,IAF):
         oldIAF,oldValue = self._dict[key]
@@ -33,6 +40,11 @@ class ValueIndex():
     def __iter__(self):
         yield from self._dict.keys()
 
+    def __contains__(self, keyword):
+        contains = False
+        with shelve.open(self.value_index_file_desc,flag='r') as storage:
+            contains = keyword in storage
+        return contains
     def keys(self):
         yield from self.__iter__()
 
@@ -49,7 +61,13 @@ class ValueIndex():
                     yield table,attribute,frequency,iaf
 
     def __getitem__(self,word):
-        return self._dict[word][1]
+        item = None
+        if self.value_index_file_desc is not None:
+            with shelve.open(self.value_index_file_desc,flag='r') as storage:
+                item = storage[word]
+        else:
+            item = self._dict[word]
+        return item[1]
 
     def setdefault(self,key,default):
         return self._dict.setdefault(key,default)
@@ -78,14 +96,31 @@ class ValueIndex():
             for key,underlying_value in self._dict.items():
                 #print(f'Persist {key}={underlying_value}')
                 storage[key]=underlying_value
+    
+    def load_file(self, value_index_filename):
+        self.value_index_file_desc = value_index_filename
+        with shelve.open(self.value_index_file_desc,flag='r') as storage:
+            if '__babel__' in storage:
+                BabelHash.babel.update(storage['__babel__'])
+
+
+    def get_mappings_from_file(self, keyword):
+        with shelve.open(self.value_index_file_desc,flag='r') as storage:
+            if keyword in storage:
+                #self._set_underlying_item(keyword, storage[keyword])
+                return storage[keyword]
+
+        return (0, BabelHash())
+
     @staticmethod
     def load_from_shelve(filename,**kwargs):
         value_index = ValueIndex()
         with shelve.open(filename,flag='r') as storage:
             keywords = kwargs.get('keywords',storage.keys())
             sample_size = kwargs.get('sample_size',0)
-
-            BabelHash.babel.update(storage['__babel__'])
+            
+            if '__babel__' in storage:
+                BabelHash.babel.update(storage['__babel__'])
 
             if sample_size > 0:
                 keywords = sample(keywords, k = sample_size)
