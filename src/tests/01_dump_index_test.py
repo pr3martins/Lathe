@@ -15,3 +15,5 @@ indexHandler.create_index_file()
 #indexHandler.create_indexes()
 #indexHandler.dump_indexes(config.value_index_filename, config.schema_index_filename)
 
+print(os.path.abspath(__file__))
+indexHandler.create_indexes()

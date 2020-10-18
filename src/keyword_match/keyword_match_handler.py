@@ -1,7 +1,9 @@
-from .keyword_match import KeywordMatch
+import itertools
+
 from utils import ConfigHandler,get_logger
 from utils import Similarity
-import itertools
+
+from .keyword_match import KeywordMatch
 
 logger = get_logger(__name__)
 class KeywordMatchHandler:
@@ -53,7 +55,7 @@ class KeywordMatchHandler:
         '''
         Termset is any non-empty subset K of the terms of a query Q
         '''
-        
+
         for ( vkm_i , vkm_j ) in itertools.combinations(P,2):
 
 

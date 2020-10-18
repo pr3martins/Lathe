@@ -1,6 +1,8 @@
 *.pyc
 venv3
+venv
 .vscode
 **/__pycache__
 data
 config
+meeting_notes
