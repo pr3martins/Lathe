@@ -23,3 +23,4 @@ qm_handler.rank_query_matches(indexHandler.value_index, indexHandler.schema_inde
 
 for query_match in qm_handler.query_matches:
     print(query_match)
+    break

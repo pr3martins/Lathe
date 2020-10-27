@@ -11,6 +11,7 @@ class ValueIndex():
 
     def __init__(self,**kwargs):
         self._dict = {}
+        self.value_index_file_desc = None
 
     def add_mapping(self,word,table,attribute,ctid):
         self.setdefault( word, (0, BabelHash() ) )
@@ -106,6 +107,8 @@ class ValueIndex():
 
     def get_mappings_from_file(self, keyword):
         with shelve.open(self.value_index_file_desc,flag='r') as storage:
+            kws = storage.keys()
+            print([kw for kw in kws if kw.startswith('vldb')])
             if keyword in storage:
                 #self._set_underlying_item(keyword, storage[keyword])
                 return storage[keyword]

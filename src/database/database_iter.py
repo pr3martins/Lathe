@@ -1,5 +1,6 @@
 import string
 import sys
+import re
 import psycopg2
 from psycopg2 import sql
 
@@ -40,12 +41,23 @@ class DatabaseIter:
                            "mightn't", 'mustn', "mustn't", 'needn', "needn't", 'shan', "shan't",
                            'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won',
                            "won't", 'wouldn', "wouldn't"]
+        
+        self.tokenizer = re.compile("\\W+|_")
+        self.url_match = re.compile("^(https?://)?\\w+\.[\\w+\./\~\?\&]+$")
 
     def _tokenize(self,text):
-        tokenized = [word.strip(string.punctuation)
-                for word in text.lower().split()
-                if word not in self.stop_words]
-        return [token for token in tokenized if token != '']
+        
+        if self.url_match.search(text) is not None:
+            return ([text], True)
+            
+        tokenized = [word_part for word in text.lower().split() 
+        for word_part in self.tokenizer.split(word.strip(string.punctuation))
+        if word_part not in self.stop_words]
+        double_tokenized = [ch_token for token in tokenized 
+        for ch_token in self.tokenizer.split(token) 
+        if ch_token not in self.stop_words]
+
+        return ([token for token in double_tokenized if token != ''], False)
 
     def _schema_element_validator(self,table,column):
         return True
@@ -117,8 +129,10 @@ class DatabaseIter:
                             ctid = row[0]
                             for col in range(1,len(row)):
                                 column = cur.description[col][0]
-                                for word in self._tokenize( str(row[col]) ):
-                                    #if len([ch for ch in word if ch in string.punctuation]) != 0:
-                                        #print(word)
-                                        #sys.exit()
+                                (tokens, is_url) = self._tokenize( str(row[col]) )
+                                for word in tokens:
+                                    #print(tokens)
+                                    if len([ch for ch in word if ch in string.punctuation]) != 0 and not is_url:
+                                        print("Tokenizer not working {}".format(word, row[col]))
+                                        sys.exit()
                                     yield table,ctid,column, word

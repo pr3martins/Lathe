@@ -8,7 +8,7 @@ from index import IndexHandler
 
 config = ConfigHandler()
 indexHandler = IndexHandler()
-indexHandler.create_index_file()
+#indexHandler.create_index_file()
 #print(os.path.abspath(__file__))
 #valueStructure = ValueStructure(5, 10)
 #indexHandler.create_histogram()

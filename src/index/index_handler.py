@@ -51,8 +51,7 @@ class IndexHandler:
         pp(self.schema_index.tables_attributes())
 
     def create_partial_value_indexes(self,**kwargs):
-        # max_count = 10000
-        # i = 0
+        
         if not self.config.create_index:
             return
 
@@ -78,10 +77,7 @@ class IndexHandler:
                 logger.info(f'Memory usage exceeded the maximum memory allowed (above {max_memory_allowed/gb:.2f}GB).')
                 part_index()
             self.value_index.add_mapping(word,table,attribute,ctid)
-            # if i == max_count:
-            #     break
-            # if i % 10000 == 0:
-            #     print (i/max_count)
+            
         part_index()
 
     def merge_partial_value_indexes_and_process_max_frequency(self):
@@ -149,6 +145,9 @@ class IndexHandler:
     def process_norms(self):
         with shelve.open(f'{self.config.value_index_filename}') as full_index:
             for word in full_index:
+                if word == '__babel__':
+                    continue
+
                 iaf, babel_hash = full_index[word]
                 for table in babel_hash:
                     for attribute in babel_hash[table]:
