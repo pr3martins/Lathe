@@ -2,6 +2,7 @@ from random import sample
 import re
 
 from utils import get_logger
+from math import log
 
 '''
 Query match is a set of tuple-sets that, if properly joined,
@@ -36,20 +37,29 @@ class QueryMatch:
 
         if has_schema_terms:
             if log_score:
-                self.total_score += self.value_score
+                self.total_score += self.schema_score
             else:
-                self.total_score *= self.value_score
-
+                self.total_score *= self.schema_score
+        
         if log_score:
             self.total_score += log(1) - log(len(self.tables_on_match))
         else:
-            self.total_score *= 1./ (1. * len(self.tables_on_match))
-
+           self.total_score *= 1./ (1. * len(self.tables_on_match))
+        
+        logger.debug("scores for : {} value_score: {} schema_score: {} tables on match: {} total: {}".format(self.matches,
+        self.value_score, 
+        self.schema_score, 
+        len(self.tables_on_match),
+        self.total_score))
+       
     def calculate_schema_score(self,similarity,log_score, split_text=False):
         has_schema_terms = False
         for keyword_match in self.matches:
+            #print(keyword_match)
             for table, attribute, schema_words in keyword_match.schema_mappings():
                 self.tables_on_match.add(table)
+                #logger.info('for {0}.{1}'.format(table, attribute))
+
                 schemasum = 0
 
                 pattern = re.compile('[_,-]')
@@ -57,12 +67,12 @@ class QueryMatch:
                 tables = [table] if not split_text else pattern.split(tables)
 
                 max_sim = 0
+                
                 for term in schema_words:
-                    for attribute_item in attributes:
-                        for table_item in tables:
-
-                            sim = similarity.word_similarity(term,table_item,attribute_item, get_average=True)
-                            logger.debug('similarity btw {0} ({1}) {2} {3}'.format(term, table_item, attribute_item, sim))
+                    for table_item in tables:
+                        for attribute_item in attributes:
+                            sim = similarity.word_similarity(term,table_item,attribute_item)
+                            #logger.info('similarity btw {0}: {1}.{2} {3}'.format(term, table_item, attribute_item, sim))
                             if sim > max_sim:
                                 max_sim = sim
 
@@ -93,10 +103,10 @@ class QueryMatch:
                     tf = 0.0
                     frequency = value_index.get_frequency(term,table,attribute)
                     word_set = set(value_index.get_mappings(term, table,attribute))
-
+                    #logger.debug("Frequency {}, term {}, max_frequency: {}, table {}, attr {}".format(frequency, term, max_frequency, table, attribute))
                     if log_score:
                         tf = log(frequency) - log(max_frequency)
-                        wsum = wsum + tf + log(float(IAF))
+                        wsum = wsum + tf + log(float(iaf))
                     else:
                         tf = (float(frequency) * 1.) / (float(max_frequency) *1.)
                         wsum = wsum + tf*float(iaf)
@@ -113,7 +123,9 @@ class QueryMatch:
                     self.value_score += cos
                 else:
                     cos = (float(wsum) / float(norm))
+                    logger.debug("Debuggin word {} for attr: {}.{} previous score: {} current score: {}".format(term,table, attribute, self.value_score, cos))
                     self.value_score *= cos
+
 
         return has_value_terms
 

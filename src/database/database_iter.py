@@ -136,3 +136,4 @@ class DatabaseIter:
                                         print("Tokenizer not working {}".format(word, row[col]))
                                         sys.exit()
                                     yield table,ctid,column, word
+

@@ -17,11 +17,14 @@ class QueryMatchHandler:
         #Input:  A keyword query Q, The set of non-empty non-free tuple-sets Rq
         #Output: The set Mq of query matches for Q
         max_qm_size = kwargs.get('max_qm_size',3)
+        segmes = kwargs.get('segments', [])
         self.query_matches = []
         for i in range(1,max(len(keyword_query), max_qm_size)+1):
             for candidate_match in itertools.combinations(keyword_matches,i):
-                logger.debug("candidate query match: {}".format(candidate_match))
+                #print("candidate query match: {}".format(candidate_match))
                 if self.has_minimal_cover(candidate_match,keyword_query):
+                #and \
+                #(len(sements) != 0  and self.check_segments(segments, candidate_match):
                     merged_query_match = self.merge_schema_filters(candidate_match)
 
                     query_match = QueryMatch(merged_query_match)
@@ -80,6 +83,7 @@ class QueryMatchHandler:
 
     def rank_query_matches(self, value_index, schema_index, similarity, log_score=False):
         for query_match in self.query_matches:
+            logger.debug("query match: {}".format(query_match))
             query_match.calculate_total_score(value_index,schema_index, similarity, log_score)
 
         self.query_matches.sort(key=lambda query_match: query_match.total_score,reverse=True)

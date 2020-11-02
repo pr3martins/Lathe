@@ -86,7 +86,7 @@ class Similarity:
                     jaccard_sim=True,
                     emb_sim=False,
                     emb10_sim='B',
-                    get_average=True):
+                    get_average=False):
         sim_list=[]
 
         if column == '*':
@@ -111,7 +111,7 @@ class Similarity:
         max_sim_list.sort(key=lambda x: x, reverse=True)
 
         sim = max_sim_list[0]
-        logger.debug('Similarity between {}. {} and {}: {}'.format(table, column, word, sim))
+        #logger.debug('Similarity between {}. {} and {}: {}'.format(table, column, word, sim))
 
         if get_average:
             sim = (max_sim_list[0] + max_sim_list[1]) / 2.

@@ -1,6 +1,3 @@
-import sys
-import os
-sys.path.append('../')
 
 from mapper import Mapper
 import json
@@ -18,13 +15,14 @@ class EvaluationHandler:
     
     
     def load_query_file(self):
-        json_file = self.config.experiments[self.config.default_evaluation_index]['experiment_file']
+        json_file = self.config.evaluation[self.config.default_evaluation_index]['query_file']
         with open(json_file) as f:
             data = json.load(f)    
             for item in data:
                 evaluation_item = EvaluationItem()
                 evaluation_item.build_from_json(item)
                 self.evaluation_items += [evaluation_item]
+                break
                 
                 
     def run_evaluation(self):

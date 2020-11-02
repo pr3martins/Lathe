@@ -43,12 +43,13 @@ class KeywordMatchHandler:
                     P[vkm] = set(ctids)
 
         #Part 2: Find sets of tuples containing larger termsets
-        self.tupleset_iterator(P)
+        self.tupleset_iterator(P, check_attributes=True)
+        self.tupleset_iterator(P, check_attributes=False) 
 
         #Part 3: Ignore tuples
         return set(P)
 
-    def tupleset_iterator(self, P):
+    def tupleset_iterator(self, P, check_attributes=False):
         #Input: A Set of non-empty tuple-sets for each keyword alone P
         #Output: The Set P, but now including larger termsets (process Intersections)
 
@@ -58,11 +59,12 @@ class KeywordMatchHandler:
 
         for ( vkm_i , vkm_j ) in itertools.combinations(P,2):
 
-
+            #print("Analysing: {} {} with {} elements in common".format(vkm_i, vkm_j, len(P[vkm_i] & P[vkm_j])))
             if (vkm_i.table == vkm_j.table and
                 set(vkm_i.keywords()).isdisjoint(vkm_j.keywords())
-               ):
-
+               ) and ((check_attributes and vkm_i.has_same_attribute(vkm_j)) 
+               or not check_attributes):
+                #print("merging: {} {}".format(vkm_i, vkm_j))
                 joint_tuples = P[vkm_i] & P[vkm_j]
 
                 if len(joint_tuples)>0:
@@ -86,7 +88,7 @@ class KeywordMatchHandler:
                     if len(P[vkm_j])==0:
                         del P[vkm_j]
 
-                    return self.tupleset_iterator(P)
+                    return self.tupleset_iterator(P, check_attributes=check_attributes)
         return {}
 
     def schema_keyword_match_generator(self, Q, schema_index,**kwargs):
@@ -108,11 +110,15 @@ class KeywordMatchHandler:
                         continue
 
                     sim = self.similarities.word_similarity(keyword,table,attribute)
-
+                    #logger.debug("similiary : {} threshold: {}".format(sim, threshold))
                     if sim >= threshold:
+                        logger.info("found a KWmatch for {} in {}.{} with score: {}".format(keyword, table, attribute, sim))
                         skm = KeywordMatch(table,schema_filter={attribute:{keyword}})
-
+                        #print(skm)
                         if skm not in keyword_matches_to_ignore:
                             S.add(skm)
-
+                        #print(S)
         return S
+
+    def filter_kkwmatches_by_segments(self, kw_matches, segments):
+        pass

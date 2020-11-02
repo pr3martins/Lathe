@@ -30,6 +30,15 @@ class KeywordMatch:
             for attribute, keywords in self.value_filter:
                 yield from keywords
 
+    def len_keywords(self):
+        total_len  = 0
+        for attribute, keywords in self.schema_filter:
+            total_len += len(keywords)
+        for attribute, keywords in self.value_filter:
+            total_len += len(keywords)
+
+        return total_len
+
     def __repr__(self):
         return self.__str__()
 
@@ -56,8 +65,26 @@ class KeywordMatch:
     def __eq__(self, other):
         return (isinstance(other, KeywordMatch)
                 and self.table == other.table
-                and set(self.keywords(schema_only=True)) == set(other.keywords(schema_only=True))
+                #and set(self.keywords(schema_only=True)) == set(other.keywords(schema_only=True))
+                and self.schema_filter == other.schema_filter
                 and self.value_filter == other.value_filter)
+
+    def has_same_attribute(self, other):
+        all_equal_attributes = False
+        attrib = set([attrib for (attrib,keywords) in self.value_filter])
+        other_attrib = set([attrib for (attrib,keywords) in other.value_filter])
+
+        if attrib != other_attrib:
+            return False
+        
+       
+        attrib = set([attrib for (attrib,keywords) in self.schema_filter])
+        other_attrib = set([attrib for (attrib,keywords) in other.schema_filter])
+
+        if attrib == other_attrib:
+            all_equal_attributes=True
+
+        return all_equal_attributes 
 
     def __hash__(self):
         return hash( (self.table,frozenset(self.keywords(schema_only=True)),self.value_filter) )
@@ -108,3 +135,6 @@ class KeywordMatch:
 
     def from_json(str_json):
         return KeywordMatch.from_json_serializable(json.loads(str_json))
+
+   
+        

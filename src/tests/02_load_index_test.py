@@ -24,4 +24,4 @@ print('Schema Index:\n')
 pp(indexHandler.schema_index)
 
 print('\n\nValue Index (Sampling 15 elements):\n')
-print(indexHandler.get_value_mappings("vldb"))
+print(indexHandler.get_value_mappings("database"))

@@ -95,7 +95,6 @@ class IndexHandler:
         babel = BabelHash.babel
 
         filenames=glob(f'{self.config.value_index_filename}.part*')
-        print(filenames)
         with ExitStack() as stack:
             partial_value_indexes = [stack.enter_context(shelve.open(fname,flag='r')) for fname in filenames]
             final_value_index = stack.enter_context(shelve.open(f'{self.config.value_index_filename}'))
@@ -125,17 +124,17 @@ class IndexHandler:
                                 merged_babel_hash.setdefault(table,BabelHash())
                                 for attribute in part_babel_hash[table]:
                                     merged_babel_hash[table].setdefault( attribute , [] )
-                                    #concatenating ctid lists
                                     merged_babel_hash[table][attribute]+= part_babel_hash[table][attribute]
-
-                                    frequency = len(merged_babel_hash[table][attribute])
-                                    max_frequency = self.schema_index[table][attribute]['max_frequency']
-                                    if frequency > max_frequency:
-                                        self.schema_index[table][attribute]['max_frequency'] = frequency
-
                     else:
-                        #print(word, value_list)
-                        part_iaf , merged_babel_hash = value_list[0]
+                        _,merged_babel_hash = value_list[0]
+
+                    for table in merged_babel_hash:
+                        for attribute in merged_babel_hash[table]:
+                            frequency = len(merged_babel_hash[table][attribute])
+                            max_frequency = self.schema_index[table][attribute]['max_frequency']
+                            if frequency >= max_frequency:
+                               self.schema_index[table][attribute]['max_frequency'] = frequency
+
 
                     num_attributes_with_this_word = sum([len(merged_babel_hash[table]) for table in merged_babel_hash])
                     merged_iaf = log1p(num_total_attributes/num_attributes_with_this_word)

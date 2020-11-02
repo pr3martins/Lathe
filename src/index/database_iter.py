@@ -120,14 +120,10 @@ class DatabaseIter:
                             ctid = row[0]
                             for col in range(1,len(row)):
                                 column = cur.description[col][0]
-<<<<<<< HEAD
-                                for word in self._tokenize( str(row[col]) ):
-=======
                                 (is_url, tokens) = self._tokenize( str(row[col]) )
                                 for word in tokens:
                                     if len([ch for ch in word if ch in string.punctuation]) != 0 and not is_url:
                                         print("Tokenizer not working {}".format(word, row[col]))
                                         sys.exit()
->>>>>>> index-creation
                                     yield table,ctid,column, word
                         data = cur.fetchmany(1000)
