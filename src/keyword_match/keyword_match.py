@@ -3,8 +3,8 @@ class KeywordMatch:
     def __init__(self, table, value_filter={},schema_filter={}):
         self.__slots__ =['table','schema_filter','value_filter']
         self.table = table
-        self.schema_filter= frozenset({ (key,frozenset(keywords)) for key,keywords in schema_filter.items()})
-        self.value_filter= frozenset({ (key,frozenset(keywords)) for key,keywords in value_filter.items()})
+        self.schema_filter= frozenset({ (attribute,frozenset(keywords)) for attribute,keywords in schema_filter.items()})
+        self.value_filter= frozenset({ (attribute,frozenset(keywords)) for attribute,keywords in value_filter.items()})
 
     def is_free(self):
         return len(self.schema_filter)==0 and len(self.value_filter)==0

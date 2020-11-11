@@ -41,20 +41,6 @@ class SchemaIndex():
     def get_num_total_attributes(self):
         return sum([len(attribute) for attribute in self.values()])
 
-    def process_norms_of_attributes(self,frequencies_iafs):
-        # for table,attribute,frequency,iaf in frequencies_iafs:
-        #     prev_norm = self[table][attribute].setdefault('norm',0)
-        #     max_frequency = self[table][attribute]['max_frequency']
-        #     term_frequency = (frequency * 1.0 / max_frequency * 1.0)
-        #     self[table][attribute]['norm'] = prev_norm + (term_frequency*iaf)**2
-        #
-        #
-        # for table in self:
-        #     for attribute in self[table]:
-        #         prev_norm = self[table][attribute]['norm']
-        #         self[table][attribute]['norm'] = math.sqrt(prev_norm)
-        logger.info('NORMS OF ATTRIBUTES PROCESSED')
-
     def persist_to_shelve(self,filename):
         with shelve.open(filename) as storage:
             for key,value in self._dict.items():

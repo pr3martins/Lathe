@@ -121,11 +121,9 @@ class DatabaseIter:
                             )
 
                     arraysize = 100000
-                    while True:
-                        results = cur.fetchmany(arraysize)
-                        if not results:
-                            break
-                        for row in results:
+                    data = cur.fetchmany(arraysize)
+                    while len(data) != 0:
+                        for row in data:
                             ctid = row[0]
                             for col in range(1,len(row)):
                                 column = cur.description[col][0]
@@ -137,3 +135,4 @@ class DatabaseIter:
                                         sys.exit()
                                     yield table,ctid,column, word
 
+                        data = cur.fetchmany(arraysize)

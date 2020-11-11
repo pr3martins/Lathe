@@ -52,9 +52,9 @@ class ConfigHandler:
                 + ['{}_config.json'.format(dataset_config.lower())])
 
             config_specific_file = json.load(open(dataset_config_path, 'r'))
-            
-            ConfigHandler.__instance['connection']['database'] = config_specific_file['database_name']
-            del config_specific_file['database_name']
+
+            ConfigHandler.__instance['connection']['database'] = config_specific_file['database']
+            del config_specific_file['database']
 
             ConfigHandler.__instance.update(config_specific_file)
             ConfigHandler.__instance['logging_mode'] = \

@@ -132,7 +132,7 @@ class IndexHandler:
                         for attribute in merged_babel_hash[table]:
                             frequency = len(merged_babel_hash[table][attribute])
                             max_frequency = self.schema_index[table][attribute]['max_frequency']
-                            if frequency >= max_frequency:
+                            if frequency > max_frequency:
                                self.schema_index[table][attribute]['max_frequency'] = frequency
 
 
