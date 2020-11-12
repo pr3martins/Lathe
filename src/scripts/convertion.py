@@ -25,7 +25,7 @@ def mas_convert_gt_tsv_to_json(input_filename, output_filename):
             if i == 0:
                 continue
 
-            line_segments = line.split('\r\n')[0].split('\t')
+            line_segments = line.split('\n')[0].split('\t')
             
             result = line_segments[1].lower()
             candidates = result.split(';')
@@ -40,13 +40,13 @@ def mas_convert_gt_tsv_to_json(input_filename, output_filename):
             
             for candidate in candidates:
                 candidate_tokens = candidate.split(':')
-                segment = candidate_tokens[0].lstrip()
+                segment = candidate_tokens[0].lstrip().replace('.', '')
                 table, attr = candidate_tokens[1].split('.')
                 #print(candidate_tokens)
                 type_word = candidate_tokens[2]
                 data = query_matches_by_table.setdefault(table, {})
-
-                filter_type = 'schema_filter' if type_word == 'NT' else 'value_filter'
+                #print("word: ", segment ,"type: ", type_word, type_word == 'nt')
+                filter_type = 'schema_filter' if type_word == 'nt' else 'value_filter'
                 dict_to_fill = data.setdefault(filter_type, {}) 
                 dict_to_fill.setdefault(attr, []).append(segment)
                 keywords += [segment]
@@ -63,7 +63,7 @@ def mas_convert_gt_tsv_to_json(input_filename, output_filename):
                     for attr in query_matches_by_table[table].setdefault(mapping_type, []):
                         attr_item = {}
                         attr_item['attribute'] = attr
-                        attr_item['keywords'] = query_matches_by_table[table][mapping_type][attr]
+                        attr_item['keywords'] = [y for w in query_matches_by_table[table][mapping_type][attr] for y in w.split(" ")]
                         query_match_item[mapping_type] += [attr_item]
                 
                 query_matches += [query_match_item]
@@ -72,7 +72,6 @@ def mas_convert_gt_tsv_to_json(input_filename, output_filename):
             
     with open(output_filename, 'w') as f:
         json.dump(ground_truth, f, indent=4)
-
 
 
 

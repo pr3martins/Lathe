@@ -62,12 +62,11 @@ class ValueIndex():
                     yield table,attribute,frequency,iaf
 
     def __getitem__(self,word):
-        item = None
         if self.value_index_file_desc is not None:
-            with shelve.open(self.value_index_file_desc,flag='r') as storage:
-                item = storage[word]
-        else:
-            item = self._dict[word]
+            if not word in self._dict:
+                with shelve.open(self.value_index_file_desc,flag='r') as storage:
+                    self._dict[word] = storage[word]
+        item = self._dict[word]
         return item[1]
 
     def setdefault(self,key,default):
@@ -95,7 +94,6 @@ class ValueIndex():
             storage['__babel__']=BabelHash.babel
 
             for key,underlying_value in self._dict.items():
-                #print(f'Persist {key}={underlying_value}')
                 storage[key]=underlying_value
     
     def load_file(self, value_index_filename):
@@ -108,9 +106,7 @@ class ValueIndex():
     def get_mappings_from_file(self, keyword):
         with shelve.open(self.value_index_file_desc,flag='r') as storage:
             kws = storage.keys()
-            #print([kw for kw in kws if kw.startswith('making')])
             if keyword in storage:
-                #self._set_underlying_item(keyword, storage[keyword])
                 return storage[keyword]
 
         return (0, BabelHash())

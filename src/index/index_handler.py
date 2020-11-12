@@ -39,7 +39,7 @@ class IndexHandler:
             with open(self.config.relations_file,'r') as relations_file:
                 tables_attributes = [(entry['name'],attribute_entry['name'])
                 for entry in json.load(relations_file)
-                for attribute_entry in entry['attributes']]
+                for attribute_entry in entry['attributes'] if entry['type'] != 'relationship']
         else:
             print('Get table_attributes from database')
             tables_attributes = self.database_handler.get_tables_and_attributes()

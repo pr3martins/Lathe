@@ -46,33 +46,32 @@ class QueryMatch:
         else:
            self.total_score *= 1./ (1. * len(self.tables_on_match))
         
-        logger.debug("scores for : {} value_score: {} schema_score: {} tables on match: {} total: {}".format(self.matches,
+        logger.info("scores for : {} value_score: {} schema_score: {} tables on match: {} total: {}".format(self.matches,
         self.value_score, 
         self.schema_score, 
         len(self.tables_on_match),
         self.total_score))
        
-    def calculate_schema_score(self,similarity,log_score, split_text=False):
+    def calculate_schema_score(self,similarity,log_score, split_text=True):
         has_schema_terms = False
         for keyword_match in self.matches:
-            #print(keyword_match)
+           
             for table, attribute, schema_words in keyword_match.schema_mappings():
                 self.tables_on_match.add(table)
-                #logger.info('for {0}.{1}'.format(table, attribute))
+                logger.debug('for {0}.{1}'.format(table, attribute))
 
                 schemasum = 0
 
                 pattern = re.compile('[_,-]')
                 attributes =  [attribute] if not split_text else pattern.split(attribute)
-                tables = [table] if not split_text else pattern.split(tables)
+                tables = [table] if not split_text else pattern.split(table)
 
-                max_sim = 0
-                
                 for term in schema_words:
+                    max_sim = 0
                     for table_item in tables:
                         for attribute_item in attributes:
                             sim = similarity.word_similarity(term,table_item,attribute_item)
-                            #logger.info('similarity btw {0}: {1}.{2} {3}'.format(term, table_item, attribute_item, sim))
+                            logger.info('similarity btw {0}: {1}.{2} {3}'.format(term, table_item, attribute_item, sim))
                             if sim > max_sim:
                                 max_sim = sim
 
@@ -142,3 +141,5 @@ class QueryMatch:
         return repr(self.matches)
 
     #TODO Fazer métodos de import/export para json
+    def to_json(self):
+        return '[{}]'.format(','.join([x.to_json() for x in self.matches]))

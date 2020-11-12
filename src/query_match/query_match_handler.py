@@ -3,7 +3,7 @@ import  itertools
 from utils import ConfigHandler
 from utils import get_logger
 from keyword_match import KeywordMatch
-
+import copy
 from .query_match import QueryMatch
 
 logger = get_logger(__name__)
@@ -31,7 +31,8 @@ class QueryMatchHandler:
 
                     #TODO: checking user group
                     self.query_matches.append(query_match)
-
+    
+    #check with paulo 
     def has_minimal_cover(self, candidate_match, keyword_query):
         #Input:  A subset CM (Candidate Query Match) to be checked as total and minimal cover
         #Output: If the match candidate is a TOTAL and MINIMAL cover
@@ -40,17 +41,30 @@ class QueryMatchHandler:
         u = set().union(*subset)
 
         is_total = (u == set(keyword_query))
-        for element in subset:
 
-            new_u = list(subset)
-            new_u.remove(element)
+        if not is_total: 
+            return False 
 
-            new_u = set().union(*new_u)
-
-            if new_u == set(keyword_query):
+        tmp_candidate_match = set([w for w in copy.deepcopy(candidate_match)])
+        for kw_match in tmp_candidate_match:
+            #print(kw_match, type(tmp_candidate_match))
+            candidate_set = copy.deepcopy(tmp_candidate_match) - set([kw_match])
+            candidate_keywords = set([w for e in candidate_set for w in e.keywords()])
+            if candidate_keywords == set(keyword_query):
                 return False
 
-        return is_total
+
+        # for element in subset:
+
+        #     new_u = list(subset)
+        #     new_u.remove(element)
+
+        #     new_u = set().union(*new_u)
+
+        #     if new_u == set(keyword_query):
+        #         return False
+
+        return True
 
 
     def merge_schema_filters(self, query_matches):

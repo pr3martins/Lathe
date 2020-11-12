@@ -1,6 +1,7 @@
 import itertools
+import re
 
-from utils import ConfigHandler,get_logger
+from utils import ConfigHandler,get_logger, stopwords
 from utils import Similarity
 
 from .keyword_match import KeywordMatch
@@ -108,17 +109,33 @@ class KeywordMatchHandler:
 
                     if attribute=='id' or  (table,attribute) in ignored_attributes:
                         continue
-
-                    sim = self.similarities.word_similarity(keyword,table,attribute)
-                    #logger.debug("similiary : {} threshold: {}".format(sim, threshold))
-                    if sim >= threshold:
-                        logger.info("found a KWmatch for {} in {}.{} with score: {}".format(keyword, table, attribute, sim))
-                        skm = KeywordMatch(table,schema_filter={attribute:{keyword}})
-                        #print(skm)
-                        if skm not in keyword_matches_to_ignore:
-                            S.add(skm)
-                        #print(S)
+                    
+                    attribute_variants = self.get_attribute_variants(attribute)
+                    for variant in attribute_variants:
+                        sim = self.similarities.word_similarity(keyword,table,variant)
+                        #logger.debug("similiary : {} threshold: {}".format(sim, threshold))
+                        if sim >= threshold:
+                            logger.info("found a KWmatch for {} in {}.{} with score: {}".format(keyword, table, attribute, sim))
+                            skm = KeywordMatch(table,schema_filter={attribute:{keyword}})
+                            #print(skm)
+                            if skm not in keyword_matches_to_ignore:
+                                S.add(skm)
+                            #print(S)
         return S
 
-    def filter_kkwmatches_by_segments(self, kw_matches, segments):
-        pass
+    def filter_kwmatches_by_segments(self, kw_matches, segments):
+        kw_result_sets = set()
+        for segment in segments:
+            keywords = set([x for x in segment.replace('"', '').split(' ') if not x in stopwords()])
+            for kw_match in kw_matches:
+                all_keywords = set([x for x in kw_match.keywords()])
+                if all_keywords == keywords:
+                    kw_result_sets.add(kw_match)
+
+        return kw_result_sets
+
+
+    def get_attribute_variants(self, attribute):
+        pattern = re.compile('[_,-]')
+        return pattern.split(attribute)
+
