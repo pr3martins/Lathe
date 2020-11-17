@@ -37,9 +37,14 @@ class IndexHandler:
         if self.config.relations_file is not None:
             print('Get table_attributes from relations_file')
             with open(self.config.relations_file,'r') as relations_file:
-                tables_attributes = [(entry['name'],attribute_entry['name'])
-                for entry in json.load(relations_file)
-                for attribute_entry in entry['attributes'] if entry['type'] != 'relationship']
+                tables_attributes = [(table_entry['name'],attribute_entry['name'])
+                for table_entry in json.load(relations_file)
+                for attribute_entry in table_entry['attributes']]
+                                     for table_entry in json.load(relations_file)
+                                     for attribute_entry in table_entry['attributes']
+                                     if attribute_entry['type'] !='fk' and 
+                                     table_entry[ 'type'] != 'relationship'
+                ]
         else:
             print('Get table_attributes from database')
             tables_attributes = self.database_handler.get_tables_and_attributes()
@@ -132,7 +137,7 @@ class IndexHandler:
                         for attribute in merged_babel_hash[table]:
                             frequency = len(merged_babel_hash[table][attribute])
                             max_frequency = self.schema_index[table][attribute]['max_frequency']
-                            if frequency >= max_frequency:
+                            if frequency > max_frequency:
                                self.schema_index[table][attribute]['max_frequency'] = frequency
 
 
@@ -165,15 +170,10 @@ class IndexHandler:
         self.schema_index.persist_to_shelve(schema_index_filename)
 
     def load_indexes(self,value_index_filename,schema_index_filename,**kwargs):
-        #self.value_index = self.value_index.load_from_shelve(value_index_filename,**kwargs)
-        self.schema_index = self.schema_index.load_from_shelve(schema_index_filename)
-        self.value_index.load_file(value_index_filename)
-        
-    def get_value_mappings(self, keyword):
-        return self.value_index.get_mappings_from_file(keyword)
+        self.value_index.load_from_shelve(value_index_filename,**kwargs)
+        self.schema_index.load_from_shelve(schema_index_filename)
 
     def create_schema_graph(self):
-
         #TODO considerar custom fk constraints
         fk_constraints = self.database_handler.get_fk_constraints()
         schema_graph = SchemaGraph()
