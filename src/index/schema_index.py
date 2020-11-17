@@ -46,10 +46,7 @@ class SchemaIndex():
             for key,value in self._dict.items():
                 storage[key]=value
 
-    @staticmethod
-    def load_from_shelve(filename):
-        schema_index = SchemaIndex()
+    def load_from_shelve(self,filename):
         with shelve.open(filename,flag='r') as storage:
             for key,value in storage.items():
-                schema_index[key]=value
-        return schema_index
+                self[key]=value
