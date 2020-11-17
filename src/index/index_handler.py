@@ -38,11 +38,9 @@ class IndexHandler:
             print('Get table_attributes from relations_file')
             with open(self.config.relations_file,'r') as relations_file:
                 tables_attributes = [(table_entry['name'],attribute_entry['name'])
-                for table_entry in json.load(relations_file)
-                for attribute_entry in table_entry['attributes']]
                                      for table_entry in json.load(relations_file)
                                      for attribute_entry in table_entry['attributes']
-                                     if attribute_entry['type'] !='fk' and 
+                                     if attribute_entry['type'] !='fk' and
                                      table_entry[ 'type'] != 'relationship'
                 ]
         else:
@@ -56,7 +54,7 @@ class IndexHandler:
         pp(self.schema_index.tables_attributes())
 
     def create_partial_value_indexes(self,**kwargs):
-        
+
         if not self.config.create_index:
             return
 
@@ -82,7 +80,7 @@ class IndexHandler:
                 logger.info(f'Memory usage exceeded the maximum memory allowed (above {max_memory_allowed/gb:.2f}GB).')
                 part_index()
             self.value_index.add_mapping(word,table,attribute,ctid)
-            
+
         part_index()
 
     def merge_partial_value_indexes_and_process_max_frequency(self):
@@ -161,7 +159,7 @@ class IndexHandler:
         for table in self.schema_index:
             for attribute in self.schema_index[table]:
                 self.schema_index[table][attribute]['norm'] = sqrt(self.schema_index[table][attribute]['norm'])
-        
+
         self.schema_index.persist_to_shelve(self.config.schema_index_filename)
 
 
