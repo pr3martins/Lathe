@@ -75,7 +75,6 @@ class IndexHandler:
 
 
         for table,ctid,attribute, word in self.database_handler.iterate_over_keywords(self.schema_index):
-            #i+=1
             if memory_size() >= max_memory_allowed:
                 logger.info(f'Memory usage exceeded the maximum memory allowed (above {max_memory_allowed/gb:.2f}GB).')
                 part_index()

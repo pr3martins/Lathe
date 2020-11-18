@@ -27,7 +27,7 @@ class ValueIndex():
     def _set_underlying_item(self, keyword, value):
         self._dict[keyword]=value
 
-    def _get_underlying_item(self, keyword, value):
+    def _get_underlying_item(self, keyword):
         item = None
         if keyword in self._dict:
             item = self._dict[keyword]
@@ -95,17 +95,30 @@ class ValueIndex():
                 storage[key]=underlying_value
 
     def load_from_shelve(self,persistant_filename,**kwargs):
+        '''
+        The load_method specifies the set of keywords to me loaded, which can be:
+        - keywords: A list or set of keywords to be loaded. If the list is empty,
+        no keyword is loaded in this method.
+        - sample: A sample of keywords from shelve is loaded. The number of keywords
+        in the sample is defined by sample_size, which is 15 by default.
+        - all_keywords: All the keywords from shelve are loaded. Beware that this
+         load methods might be expensive.
+        '''
         self.persistant_filename = persistant_filename
-        #If the sample_size == 0, this method loads all keywords from persistant_filename
-        sample_size = kwargs.get('sample_size',0)
+        load_method = kwargs.get('load_method','keywords')
+        keywords = kwargs.get('keywords',[])
+        sample_size = kwargs.get('sample_size',15)
+
         with shelve.open(self.persistant_filename,flag='r') as storage:
-            keywords = kwargs.get('keywords',storage.keys())
+
+            if load_method != 'keywords':
+                keywords = storage.keys()
+
+                if load_method == 'sample':
+                    keywords = sample(keywords, k = sample_size)
 
             if '__babel__' in storage:
                 BabelHash.babel.update(storage['__babel__'])
-
-            if sample_size > 0:
-                keywords = sample(keywords, k = sample_size)
 
             for keyword in keywords:
                 if keyword == '__babel__':

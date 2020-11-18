@@ -51,7 +51,7 @@ class Similarity:
 
 
     def word_similarity(self,word,table,column = '*'):
-        sim_list=[0]
+        sim_list=[]
 
         if column == '*':
             schema_term = table
@@ -66,6 +66,9 @@ class Similarity:
 
         if self.use_jaccard_sim:
             sim_list.append( self.jaccard_similarity(schema_term,word) )
+
+        if len(sim_list) == 0:
+            return 0
 
         if   self.aggregation_method == 'max':
             return max(sim_list)

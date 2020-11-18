@@ -28,9 +28,9 @@ class DatabaseHandler:
                 cur.execute(sql)
                 return cur.fetchall()
 
-    def iterate_over_keywords(self,schema_index):
+    def iterate_over_keywords(self,schema_index,**kwargs):
         database_table_columns=schema_index.tables_attributes()
-        return DatabaseIter(database_table_columns)
+        return DatabaseIter(database_table_columns,**kwargs)
 
     def get_fk_constraints(self):
         with psycopg2.connect(self.conn_string) as conn:

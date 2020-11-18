@@ -13,15 +13,10 @@ indexHandler = IndexHandler()
 
 print(os.path.abspath(__file__))
 
-#Testando o upload com um dos partial indexes
-#filename=glob(f'{config.value_index_filename}.part*')[1]
-#print(f'filename {filename}')
-
-
-indexHandler.load_indexes(config.value_index_filename, config.schema_index_filename)
+indexHandler.load_indexes(config.value_index_filename, config.schema_index_filename,load_method='sample')
 
 print('Schema Index:\n')
 pp(dict(indexHandler.schema_index))
 
 print('\n\nValue Index (Sampling 15 elements):\n')
-print(indexHandler.get_value_mappings("database"))
+print(indexHandler.value_index)
