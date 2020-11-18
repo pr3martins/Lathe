@@ -66,7 +66,7 @@ class CandidateNetworkHandler:
         while F:
             prev_candidate_network = F.popleft()
 
-            for vertex_u in CN.vertices():
+            for vertex_u in prev_candidate_network.vertices():
                 keyword_match,alias = vertex_u
 
                 sorted_directed_neighbors = sorted(schema_graph.directed_neighbours(keyword_match.table),
