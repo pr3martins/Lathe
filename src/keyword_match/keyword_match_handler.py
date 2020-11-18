@@ -115,7 +115,7 @@ class KeywordMatchHandler:
                         sim = self.similarities.word_similarity(keyword,table,variant)
                         #logger.debug("similiary : {} threshold: {}".format(sim, threshold))
                         if sim >= threshold:
-                            logger.info("found a KWmatch for {} in {}.{} with score: {}".format(keyword, table, attribute, sim))
+                            logger.info(f"found a KWmatch for {keyword} in {table}.{attribute} with score: {sim}")
                             skm = KeywordMatch(table,schema_filter={attribute:{keyword}})
                             #print(skm)
                             if skm not in keyword_matches_to_ignore:

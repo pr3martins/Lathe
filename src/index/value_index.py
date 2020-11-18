@@ -42,7 +42,7 @@ class ValueIndex():
         iaf, value = self._get_underlying_item(keyword)
         return value
 
-    def get_iaf(self,key):
+    def get_iaf(self,keyword):
         iaf, value = self._get_underlying_item(keyword)
         return iaf
 
