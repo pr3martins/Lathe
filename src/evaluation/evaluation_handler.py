@@ -1,103 +1,116 @@
-from mapper import Mapper
 from copy import deepcopy
 import json
 import sys
+from collections import OrderedDict
 
-from utils import ConfigHandler
-from evaluation.evaluation_item import EvaluationItem
+from utils import ConfigHandler,get_logger,timestr
+from query_match import QueryMatch
+from candidate_network import CandidateNetwork
 
+logger = get_logger(__name__)
 
 class EvaluationHandler:
-    
+
     def __init__(self):
-        self.mapper = Mapper()
         self.config = ConfigHandler()
-        self.evaluation_items = []
-        self.global_precision = []
-        self.global_mrr = 0.0
-        self.start_from = 0
-    
-    
-    def load_query_file(self):
-        json_file = self.config.evaluation[self.config.default_evaluation_index]['query_file']
-        with open(json_file) as f:
-            data = json.load(f)    
-            for i, item in enumerate(data):
-                evaluation_item = EvaluationItem()
-                evaluation_item.build_from_json(item)
-                self.evaluation_items += [evaluation_item]
-        self.start_from = self.config.evaluation[self.config.default_evaluation_index]['start_from']
-        self.result_file =  self.config.evaluation[self.config.default_evaluation_index]['result_file']
-                 
-    def run_evaluation(self):
-        
-        for i, evaluation_item in enumerate(self.evaluation_items):
-            if i < self.start_from:
-                continue
-
-            print(f"running for {evaluation_item.segments}")
-            ranked_items = self.mapper.get_matches(evaluation_item.segments)
-            max_items = 30 if len(ranked_items) > 30 else len(ranked_items)
-            self.evaluation_items[i].ranked_matches = self._fix_matches(ranked_items[:max_items])
-            self.evaluation_items[i].find_query_match_gt()
-            self.store_partial_result(self.evaluation_items[i])
-
-            
-    def calculate_metrics(self):
-        self._get_precision()
-        self._get_mrr()        
-        
-    
-    def _get_precision(self):
-        positions = [0.0] * 6
-        for eval_item in self.evaluation_items:
-            pos = 5 if eval_item.qm_position == -1 or eval_item.qm_position >= 5 else eval_item.qm_position
-            positions[pos] += 1.0
-        
-        precion_metrics = [pos/(len(self.evaluation_items)* 1.0) for pos in positions]
-        
-        self.global_precision = precion_metrics
-        
-    def _get_mrr(self):
-        mrr = 0.0
-        for eval_item in self.evaluation_items:
-             mrr += 1/(1.0*eval_item.qm_position) if eval_item.qm_position > 0 else 0.0
-        mrr = mrr / (len(self.evaluation_items) * 1.0)
-        
-        self.global_mrr = mrr
-
-    def save_gt(self):
-        print(self.global_mrr, self.global_precision)
-
-    def store_partial_result(self, eval_item):
-        with open(self.result_file, 'a+') as f:
-            result = '[{}]'.format(','.join([x.to_json() for x in eval_item.ranked_matches]))
-            match_item = {'query_candidate_matches': []}
-            match_item['query_candidate_matches'] = json.loads(result)
-            match_item['query_candidate_item'] = eval_item.qm_position
-            match_item['query_id'] = eval_item.id
-
-            f.write('{}\n'.format(json.dumps(match_item)))
-
-    def _get_default_attributes(self):
-        attribute_map={}
-        with open(self.config.relations_file, "r") as f:
-            attribute_map = {item['name']:attr['name']  for item in json.load(f) \
-                for attr in item['attributes'] if attr.get('importance','') == 'primary' }
-        
-        return attribute_map
-
-    def _fix_matches(self, ranked_matches):
-        attribute_map = self._get_default_attributes()
-        for i, ranked_match in enumerate(ranked_matches): 
-            for kw_match in ranked_match.matches:
-                if kw_match.has_default_mapping() and kw_match.table in attribute_map:
-                    kw_match.replace_default_mapping(attribute_map[kw_match.table])
-        
-        return ranked_matches
-                
-            
 
 
-        
-        
+    def load_golden_standards(self):
+        with open(self.config.golden_standards_file,mode='r') as f:
+            data = json.load(f)
+
+        golden_standards = OrderedDict()
+        for i, item in enumerate(data):
+
+            if 'query_matches' in item:
+                item['query_matches'] = [QueryMatch.from_json_serializable(json_serializable_qm)
+                                         for json_serializable_qm in item['query_matches']]
+
+            if 'candidate_networks' in item:
+                item['candidate_networks'] = [CandidateNetwork.from_json_serializable(json_serializable_cn)
+                                         for json_serializable_cn in item['candidate_networks']]
+
+            golden_standards[item['keyword_query']] = item
+
+        self.golden_standards = golden_standards
+
+    def load_results_from_file(self,filename):
+        with open(filename,mode='r') as f:
+            data = json.load(f)
+        return data
+
+
+    def evaluate_results(self,results, **kwargs):
+        '''
+        results_filename is declared here for sake of readability. But the
+        default value is only set later to get a timestamp more accurate.
+        '''
+        results_filename = kwargs.get('results_filename',None)
+
+        self.evaluate_query_matches(results)
+
+        if results_filename is None:
+            results_filename = f'{self.config.results_directory}evaluated-results-{self.config.database_config}-{timestr()}.json'
+            with open(results_filename,mode='w') as f:
+                logger.info(f'Writing evaluated results in {results_filename}')
+                json.dump(results,f)
+
+    def evaluate_query_matches(self,results,**kwargs):
+        # TODO decide a better name for results
+        max_k = kwargs.get('max_k',10)
+
+        results.setdefault('evaluation',{})
+        results['evaluation']['query_matches']={}
+
+        relevant_positions = []
+        for item in results['results']:
+
+            if 'query_matches' in item:
+                golden_qm = self.golden_standards[item['keyword_query']]['query_matches'][0]
+
+                query_matches = [QueryMatch.from_json_serializable(json_serializable_qm)
+                                 for json_serializable_qm in item['query_matches']]
+
+                relevant_position = self.get_relevant_position(query_matches,golden_qm)
+
+                relevant_positions.append(relevant_position)
+
+        results['evaluation']['query_matches']['mrr'] = self.get_mean_reciprocal_rank(relevant_positions)
+
+        precision_at_k = {f'p@{k}' : self.get_precision_at_k(k,relevant_positions)
+                          for k in range(1,max_k+1)}
+        results['evaluation']['query_matches'].update(precision_at_k)
+
+        results['evaluation']['query_matches']['relevant_positions']=relevant_positions
+
+        print(f'evaluation {results["evaluation"]}')
+
+    def get_relevant_position(self,items,ground_truth):
+        for i,item in enumerate(items):
+            if item==ground_truth:
+                return (i+1)
+        return -1
+
+    def get_mean_reciprocal_rank(self,relevant_positions):
+        if len(relevant_positions)==0:
+            return 0
+        sum = 0
+        for relevant_position in relevant_positions:
+            if relevant_position != -1:
+                reciprocal_rank = 1/relevant_position
+            else:
+                reciprocal_rank = 0
+            sum += reciprocal_rank
+
+        mrr = sum/len(relevant_positions)
+        return mrr
+
+    def get_precision_at_k(self,k,relevant_positions):
+        if len(relevant_positions)==0:
+            return 0
+        sum = 0
+        for relevant_position in relevant_positions:
+            if relevant_position <= k and relevant_position!=-1:
+                sum+=1
+        presition_at_k = sum/len(relevant_positions)
+        return presition_at_k

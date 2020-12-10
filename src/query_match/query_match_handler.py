@@ -3,66 +3,48 @@ import  itertools
 from utils import ConfigHandler
 from utils import get_logger
 from keyword_match import KeywordMatch
-import copy
 from .query_match import QueryMatch
 
 logger = get_logger(__name__)
 
 class QueryMatchHandler:
 
-    def __init__(self):
-        self.query_matches = []
-
-    def generate_query_matches(self, keyword_query,keyword_matches, **kwargs):
+    def generate_query_matches(self, keywords,keyword_matches, **kwargs):
         #Input:  A keyword query Q, The set of non-empty non-free tuple-sets Rq
         #Output: The set Mq of query matches for Q
         max_qm_size = kwargs.get('max_qm_size',3)
-        segmes = kwargs.get('segments', [])
-        self.query_matches = []
-        for i in range(1,max(len(keyword_query), max_qm_size)+1):
-            for candidate_match in itertools.combinations(keyword_matches,i):
-                #print("candidate query match: {}".format(candidate_match))
-                if self.has_minimal_cover(candidate_match,keyword_query):
-                #and \
-                #(len(sements) != 0  and self.check_segments(segments, candidate_match):
-                    merged_query_match = self.merge_schema_filters(candidate_match)
+        query_matches = []
 
+        for i in range(1,min(len(keywords), max_qm_size)+1):
+            for candidate_query_match in itertools.combinations(keyword_matches,i):
+                if self.has_minimal_cover(candidate_query_match,keywords):
+                    merged_query_match = self.merge_schema_filters(candidate_query_match)
                     query_match = QueryMatch(merged_query_match)
+                    query_matches.append(query_match)
 
-                    #TODO: checking user group
-                    self.query_matches.append(query_match)
-    
-    #check with paulo 
-    def has_minimal_cover(self, candidate_match, keyword_query):
+        return query_matches
+
+    #check with brandell
+    def has_minimal_cover(self, candidate_query_match, keywords):
         #Input:  A subset CM (Candidate Query Match) to be checked as total and minimal cover
         #Output: If the match candidate is a TOTAL and MINIMAL cover
 
-        subset = [kw_match.keywords() for kw_match in candidate_match]
-        u = set().union(*subset)
+        # Check whether it is total
+        if {keyword
+            for keyword_match in candidate_query_match
+            for keyword in keyword_match.keywords()
+            } != set(keywords):
 
-        is_total = (u == set(keyword_query))
+            return False
 
-        if not is_total: 
-            return False 
-
-        tmp_candidate_match = set([w for w in copy.deepcopy(candidate_match)])
-        for kw_match in tmp_candidate_match:
-            #print(kw_match, type(tmp_candidate_match))
-            candidate_set = copy.deepcopy(tmp_candidate_match) - set([kw_match])
-            candidate_keywords = set([w for e in candidate_set for w in e.keywords()])
-            if candidate_keywords == set(keyword_query):
+        # Check whether it is minimal
+        for element in candidate_query_match:
+            if {keyword
+                for keyword_match in candidate_query_match
+                for keyword in keyword_match.keywords()
+                if keyword_match!=element
+                } == set(keywords):
                 return False
-
-
-        # for element in subset:
-
-        #     new_u = list(subset)
-        #     new_u.remove(element)
-
-        #     new_u = set().union(*new_u)
-
-        #     if new_u == set(keyword_query):
-        #         return False
 
         return True
 
@@ -95,9 +77,9 @@ class QueryMatchHandler:
 
         return merged_qm
 
-    def rank_query_matches(self, value_index, schema_index, similarity, log_score=False):
-        for query_match in self.query_matches:
+    def rank_query_matches(self,query_matches, value_index, schema_index, similarity, log_score=False):
+        for query_match in query_matches:
             logger.debug("query match: {}".format(query_match))
             query_match.calculate_total_score(value_index,schema_index, similarity, log_score)
 
-        self.query_matches.sort(key=lambda query_match: query_match.total_score,reverse=True)
+        query_matches.sort(key=lambda query_match: query_match.total_score,reverse=True)

@@ -1,7 +1,7 @@
 import itertools
 import re
 
-from utils import ConfigHandler,get_logger, stopwords
+from utils import ConfigHandler,get_logger
 from utils import Similarity
 
 from .keyword_match import KeywordMatch
@@ -11,6 +11,10 @@ class KeywordMatchHandler:
     def __init__(self, similarity):
         self.config = ConfigHandler()
         self.similarities = similarity
+
+    def get_keyword_matches(self, keywords, value_index, schema_index,**kwargs):
+        sk_matches = schema_keyword_match_generator(keywords, schema_index)
+        vk_matches = value_keyword_match_generator(keywords, schema_index)
 
     def value_keyword_match_generator(self, Q,value_index,**kwargs):
 
@@ -45,7 +49,7 @@ class KeywordMatchHandler:
 
         #Part 2: Find sets of tuples containing larger termsets
         self.tupleset_iterator(P, check_attributes=True)
-        self.tupleset_iterator(P, check_attributes=False) 
+        self.tupleset_iterator(P, check_attributes=False)
 
         #Part 3: Ignore tuples
         return set(P)
@@ -63,7 +67,7 @@ class KeywordMatchHandler:
             #print("Analysing: {} {} with {} elements in common".format(vkm_i, vkm_j, len(P[vkm_i] & P[vkm_j])))
             if (vkm_i.table == vkm_j.table and
                 set(vkm_i.keywords()).isdisjoint(vkm_j.keywords())
-               ) and ((check_attributes and vkm_i.has_same_attribute(vkm_j)) 
+               ) and ((check_attributes and vkm_i.has_same_attribute(vkm_j))
                or not check_attributes):
                 #print("merging: {} {}".format(vkm_i, vkm_j))
                 joint_tuples = P[vkm_i] & P[vkm_j]
@@ -95,7 +99,7 @@ class KeywordMatchHandler:
     def schema_keyword_match_generator(self, Q, schema_index,**kwargs):
         ignored_tables = kwargs.get('ignored_tables',[])
         ignored_attributes = kwargs.get('ignored_attributes',[])
-        threshold = kwargs.get('threshold',0.8)
+        threshold = kwargs.get('threshold',1)
         keyword_matches_to_ignore = kwargs.get('keyword_matches_to_ignore',set())
 
         S = set()
@@ -109,7 +113,7 @@ class KeywordMatchHandler:
 
                     if attribute=='id' or  (table,attribute) in ignored_attributes:
                         continue
-                    
+
                     attribute_variants = self.get_attribute_variants(attribute)
                     for variant in attribute_variants:
                         sim = self.similarities.word_similarity(keyword,table,variant)
@@ -123,19 +127,29 @@ class KeywordMatchHandler:
                             #print(S)
         return S
 
-    def filter_kwmatches_by_segments(self, kw_matches, segments):
-        kw_result_sets = set()
-        for segment in segments:
-            keywords = set([x for x in segment.replace('"', '').split(' ') if not x in stopwords()])
-            for kw_match in kw_matches:
-                all_keywords = set([x for x in kw_match.keywords()])
-                if all_keywords == keywords:
-                    kw_result_sets.add(kw_match)
+    def filter_kwmatches_by_compound_keywords(self, vk_matches, compound_keywords):
+        '''
+        Value-keyword matches which contains only part of a compound_keyword are
+        pruned.
+        '''
+        filtered_vk_matches = set()
+        for value_keyword_match in vk_matches:
+            must_remove = False
+            set_a = set(value_keyword_match.keywords())
 
-        return kw_result_sets
+            for compound_keyword in compound_keywords:
+                set_b = set(compound_keyword)
+
+                set_ab = set_a | set_b
+                if len(set_ab)>0 or len(set_ab)<len(set_a):
+                    must_remove = True
+
+            if not must_remove:
+                filtered_vk_matches.add(value_keyword_match)
+
+        return filtered_vk_matches
 
 
     def get_attribute_variants(self, attribute):
         pattern = re.compile('[_,-]')
         return pattern.split(attribute)
-

@@ -9,7 +9,7 @@ from keyword_match import KeywordMatchHandler
 #query = ["authors", "papers", "conference", "vldb", "2002", "1995"]
 #query = ["university", "homepage", "michingan"]
 # query = ["references", "making", "database", "systems", "usable"]
-query = ['title','harrison','ford','george','lucas']
+query = ['title','james','bond']
 keywords = query
 
 

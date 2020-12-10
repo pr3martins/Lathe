@@ -14,7 +14,7 @@ similarity = Similarity(indexHandler.schema_index)
 #query = ["authors", "papers", "conference", "vldb", "2002", "1995"]
 #query = ["hopmepage", "h", "v", "jagadish"]
 # query = ["references", "making", "database", "systems", "usable"]
-query = ['title','harrison','ford','george','lucas']
+query = ['title','james','bond']
 
 kwHandler = KeywordMatchHandler(similarity)
 print("Generating schema matches")

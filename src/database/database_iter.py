@@ -4,7 +4,7 @@ import re
 import psycopg2
 from psycopg2 import sql
 
-from utils import ConfigHandler, get_logger, stopwords
+from utils import ConfigHandler, get_logger, Tokenizer
 
 logger = get_logger(__name__)
 class DatabaseIter:
@@ -12,6 +12,7 @@ class DatabaseIter:
         self.database_table_columns=database_table_columns
 
         self.limit_per_table = kwargs.get('limit_per_table', None)
+        self.tokenizer = kwargs.get('tokenizer', Tokenizer())
 
         self.config = ConfigHandler()
         self.conn_string = "host='{}' dbname='{}' user='{}' password='{}'".format(\
@@ -19,24 +20,8 @@ class DatabaseIter:
             self.config.connection['user'], self.config.connection['password'])
 
         self.table_hash = self._get_indexable_schema_elements()
-        self.stop_words = stopwords()
-        
-        self.tokenizer = re.compile("\\W+|_")
-        self.url_match = re.compile("^(https?://)?\\w+\.[\\w+\./\~\?\&]+$")
 
-    def _tokenize(self,text):
-        
-        if self.url_match.search(text) is not None:
-            return ([text], True)
-            
-        tokenized = [word_part for word in text.lower().split() 
-        for word_part in self.tokenizer.split(word.strip(string.punctuation))
-        if word_part not in self.stop_words]
-        double_tokenized = [ch_token for token in tokenized 
-        for ch_token in self.tokenizer.split(token) 
-        if ch_token not in self.stop_words]
 
-        return ([token for token in double_tokenized if token != ''], False)
 
     def _schema_element_validator(self,table,column):
         return True
@@ -106,12 +91,17 @@ class DatabaseIter:
                             ctid = row[0]
                             for col in range(1,len(row)):
                                 column = cur.description[col][0]
-                                (tokens, is_url) = self._tokenize( str(row[col]) )
+                                text = str(row[col])
+                                if self.tokenizer.is_url(text):
+                                    tokens = [text]
+                                else:
+                                    tokens = self.tokenizer.tokenize(text)
+
                                 for word in tokens:
                                     #print(tokens)
-                                    if len([ch for ch in word if ch in string.punctuation]) != 0 and not is_url:
-                                        print("Tokenizer not working {}".format(word, row[col]))
-                                        sys.exit()
+                                    # if len([ch for ch in word if ch in string.punctuation]) != 0 and not is_url:
+                                    #     print("Tokenizer not working {}".format(word, row[col]))
+                                    #     sys.exit()
                                     yield table,ctid,column, word
 
                         data = cur.fetchmany(arraysize)

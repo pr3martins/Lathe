@@ -1,0 +1,95 @@
+- O Lathe recebe como entrada uma keyword query (string), que será tokenizada
+  para obtermos keywords e compound_keywords. Precisamos das keywords, porque
+  toda operação de totalizade, por exemplo, utiliza as keywords. Por outro lado,
+  precisamos das compound_keywords para filtrar keyword matches. As compound_keywords
+  são geradas quando tokenizamos os segmentos de uma keyword query.
+
+  - Class Tokenizer dentro de utils. Fiz o método 'simple' e outro que pode ser chamado
+    de 'double' talvez. O método tokenize retorna apenas os tokens. Caso você queira saber
+    se um texto é uma url, use o método Tokenizer.is_url().
+    Database_iter já está considerando o novo tokenizer.
+
+
+
+
+- Value-keyword matches which contains only part of a compound_keyword are
+  pruned. They are not pruned if they don't contain any part of
+  a compound_keyword whatsoever.
+
+- O método de filtrar keywords by segments só permitia kw_matches com mapeamento
+  para mais de uma keyword se, e somente, se elas estivessem explicitamente em
+  um mesmo segmento. Ex: o keyword match Person^v[name:{will,smith}] poderia ser
+  gerado para a consulta  '"will smith" movies', mas não para a consulta
+  'will smith movies'.
+
+
+'"will smith movies"'
+['will smith movies']
+
+'will smith movies'
+
+'"will smith" movies'
+['will smith','movies']
+
+'"will" "smith" "movies"'
+['will','smith','movies']
+
+
+- Coloquei stop_words como class atribute do Tokenizer, porque só as utilizamos
+  dentro do tokenizer. Mas isso aqui pode mudar também.
+
+- A classe mapper pode ser futuramente renomeada para Main, Lathe ou KW2DB.
+
+- A princípio, não faz sentido compound_keywords em sk matches. Talvez pudessemos
+  fazer isso na etapa de query match para os casos 'production year', mas é um
+  caso a se pensar.
+
+- Attribute variants affect tables like movie_info. We need to penalize keywords
+  that are only mapped to part of a schema element. I guess this would be better
+  in the similarity class.
+
+- We consider that the relevant query match usually have length <= 3. Probably
+  this was causing the experiment on MAS to take so long.
+  For now, we are not considering any filter in query matches using compound
+  keywords
+
+- I changed the minimal cover algorithm, now it is using set comprehension. IMO
+  it looks more readable. It does not need to import copy.
+
+
+
+
+
+
+- I remove the stopwords check when creating a KeywordMatch from a json. I guess
+  a keyword match must not have any stop_words whatsoever.
+
+- When using QueryMatch.to_json_serializable the query match turns into a list
+  instead of set of KeywordMatch.to_json_serializable
+
+- Eu acho melhor fazer a execução do late e avaliacao como duas fases separadas.
+  Além disso, o Mapper é o módulo principal, então ele que tem que chamar o
+  EvaluationHandler e não o contrário.
+
+- Eu acho interessante oferecer a opção de uma rquivo para GT e outro para o queryset.
+  Na prática eles podem ser os mesmo, mas nem sempre você tem o GT disponível.
+
+- Precisamos de um id na consulta? Porque eu talvez possa usar a própria consulta
+  como "chave" para poder acessar o Gt ou resultados. A mesma consulta pode ter uma
+  posicao diferente no queryset.
+  Se bem que se parar para analisar, duas consultas diferentes podem ter a mesma
+  keyword query.
+  E o que tu recber do citolin também (exemplo: 2004).
+  Precisamos entender que talvez as keyword_queries possam mudar com frequencia,
+  dependendo de como o citolin fazer o parser e o que for modelado.
+  Na verdade ele é um id ou um position? Por exemplo, quando eu faço clear intents
+  eu mudo os ids? Porque continuam na mesma posição.
+
+- A divisão em python gera por padrão um float. Então não precisa ficar multiplicando
+  por 1.0 as coisas. A divisão inteira normalmente é explícia:  4//3 == 1
+
+- No _get_precision, a os 5 armazena todos os não encontrados, certo? Fica confuso
+  de entender se pos for index e em outra parte valor.
+  Essa função não funciona se o lathe não retornar nenhuma QM
+
+- Falta incluir store_partial_result, default_attribute_replace

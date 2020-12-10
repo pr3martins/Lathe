@@ -12,10 +12,6 @@ class CandidateNetworkHandler:
     def __init__(self):
         self.config = ConfigHandler()
 
-        self.conn_string = "host='{}' dbname='{}' user='{}' password='{}'".format(\
-            self.config.connection['host'], self.config.connection['database'], \
-            self.config.connection['user'], self.config.connection['password'])
-
     def generate_cns_per_qm(self,schema_index,schema_graph,query_match,**kwargs):
 
         show_log = kwargs.get('show_log',False)

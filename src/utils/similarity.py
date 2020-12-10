@@ -1,6 +1,4 @@
-import copy
 import itertools
-from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
 
 from utils import ConfigHandler

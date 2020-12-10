@@ -1,6 +1,7 @@
 import json
 from collections import Counter  #used to check whether two CandidateNetworks are equal
 
+from keyword_match import KeywordMatch
 from utils import Graph
 
 class CandidateNetwork(Graph):
