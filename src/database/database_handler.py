@@ -52,7 +52,15 @@ class DatabaseHandler:
                         ORDER BY 1,2,4;
                     '''
                 cur.execute(sql)
-                return cur.fetchall()
+
+                fk_constraints = cur.fetchall()
+
+                for i in range(len(fk_constraints)):
+                    old_row = fk_constraints[i]
+                    new_row = (column.strip('\"') for column in old_row)
+                    fk_constraints[i] = new_row
+
+                return fk_constraints
 
     def exec_sql (conn_string,SQL,**kwargs):
         show_results=kwargs.get('show_results',True)

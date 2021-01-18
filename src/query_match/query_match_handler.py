@@ -1,4 +1,5 @@
 import  itertools
+from collections import Counter
 
 from utils import ConfigHandler
 from utils import get_logger
@@ -30,6 +31,7 @@ class QueryMatchHandler:
         #Output: If the match candidate is a TOTAL and MINIMAL cover
 
         # Check whether it is total
+
         if {keyword
             for keyword_match in candidate_query_match
             for keyword in keyword_match.keywords()
@@ -48,6 +50,26 @@ class QueryMatchHandler:
 
         return True
 
+    def has_minimal_cover(self, candidate_query_match, keywords):
+        #Input:  A subset CM (Candidate Query Match) to be checked as total and minimal cover
+        #Output: If the match candidate is a TOTAL and MINIMAL cover
+
+        total_counter = Counter(keyword
+                                  for keyword_match in candidate_query_match
+                                  for keyword in keyword_match.keywords())
+
+        # Check whether it is total
+        if len(total_counter)!=len(keywords):
+            return False
+
+        # Check whether it is minimal
+        for keyword_match in candidate_query_match:
+            local_counter = Counter(keyword_match.keywords())
+            # subtract operation keeps only positive counts
+            if len(total_counter-local_counter)==len(keywords):
+                return False
+
+        return True
 
     def merge_schema_filters(self, query_matches):
         table_hash={}

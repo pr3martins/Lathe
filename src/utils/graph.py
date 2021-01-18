@@ -115,6 +115,9 @@ class Graph:
             if sum(1 for neighbour in self.neighbours(vertice)) == 1:
                 yield vertice
 
+    def num_leaves(self):
+        return len(list(self.leaves()))
+
     def get_starting_vertex(self):
         return next(iter(self.vertices()))
 

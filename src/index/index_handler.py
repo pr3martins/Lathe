@@ -43,7 +43,7 @@ class IndexHandler:
                                      if attribute_entry['type'] !='fk' and
                                      table_entry[ 'type'] != 'relationship'
                 ]
-        else:
+        # else:
             print('Get table_attributes from database')
             tables_attributes = self.database_handler.get_tables_and_attributes()
 
@@ -83,7 +83,8 @@ class IndexHandler:
         part_index()
 
     def merge_partial_value_indexes_and_process_max_frequency(self):
-        '''
+        '''    return '\n'.join(print_string)
+
         Para garantir que todos os arquivos abertos serão fechados, é bom utilizar
         a cláusula with. Mas como eu quero abrir um numero n de arquivos, eu pensei
         em utilizar essa classe ExitStack.

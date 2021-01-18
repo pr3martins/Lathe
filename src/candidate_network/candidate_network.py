@@ -5,6 +5,11 @@ from keyword_match import KeywordMatch
 from utils import Graph
 
 class CandidateNetwork(Graph):
+
+    def __init__(self, graph_dict=None, has_edge_info=False):
+        self.score = None
+        super().__init__(graph_dict,has_edge_info)
+
     def add_vertex(self, vertex, default_alias=True):
         if default_alias:
             vertex = (vertex, 't{}'.format(self.__len__()+1))
@@ -54,23 +59,18 @@ class CandidateNetwork(Graph):
             self._Graph__graph_dict[neighbour][0].remove(vertex)
         self._Graph__graph_dict.pop(vertex)
 
-    def minimal_cover(self,QM):
-        if self.non_free_keyword_matches()!=set(QM):
-            return False
+    def is_total(self,query_match):
+        return self.non_free_keyword_matches()==set(query_match)
 
-        for vertex in self.vertices():
+    def contains_keyword_free_match_leaf(self):
+        for vertex in self.leaves():
             keyword_match,alias = vertex
             if keyword_match.is_free():
-                visited = {vertex}
-                start_node = next(iter( self.vertices() - visited ))
-
-                for x in self.leveled_dfs_iter(start_node,visited=visited):
-                    #making sure that the DFS algorithm runs until the end of iteration
-                    continue
-
-                if visited == self.vertices():
-                    return False
+                return False
         return True
+
+    def minimal_cover(self,query_match):
+        return self.is_total(query_match) and not self.contains_keyword_free_match_leaf()
 
     def unaliased_edges(self):
         for (keyword_match,alias),(neighbour_keyword_match,neighbour_alias) in self.edges():
