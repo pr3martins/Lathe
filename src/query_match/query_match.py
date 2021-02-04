@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 class QueryMatch:
 
     def __init__(self, keyword_matches):
-        self.keyword_matches = set(keyword_matches)
+        self.keyword_matches = keyword_matches
         self.value_score = 1.0
         self.schema_score = 1.0
         self.total_score = 1.0
@@ -92,6 +92,7 @@ class QueryMatch:
             for table, attribute, keywords in keyword_match.value_mappings():
 
                 # TODO colocar metrics = schema_index[table][attribute] e mencionar como dict parece mais limpo
+                metrics = schema_index[table][attribute]
                 norm = schema_index[table][attribute]['norm']
                 max_frequency  = schema_index[table][attribute]['max_frequency']
 

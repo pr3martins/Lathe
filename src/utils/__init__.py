@@ -5,3 +5,4 @@ from .graph import Graph
 from .memory import memory_size,memory_percent
 from .timestr import timestr
 from .tokenizer import Tokenizer
+from .next_path import next_path

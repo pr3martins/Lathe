@@ -3,7 +3,7 @@ import json
 import sys
 from collections import OrderedDict
 
-from utils import ConfigHandler,get_logger,timestr
+from utils import ConfigHandler,get_logger,timestr,next_path
 from query_match import QueryMatch
 from candidate_network import CandidateNetwork
 
@@ -48,15 +48,16 @@ class EvaluationHandler:
         results_filename = kwargs.get('results_filename',None)
 
         self.evaluate_query_matches(results)
+        self.evaluate_candidate_networks(results)
+        self.evaluate_performance(results)
 
         if results_filename is None:
-            results_filename = f'{self.config.results_directory}evaluated-results-{self.config.database_config}-{timestr()}.json'
+            results_filename = next_path(f'{self.config.results_directory}evaluated-results-{self.config.database_config}-%03d.json')
             with open(results_filename,mode='w') as f:
                 logger.info(f'Writing evaluated results in {results_filename}')
-                json.dump(results,f)
+                json.dump(results,f, indent = 4)
 
     def evaluate_query_matches(self,results,**kwargs):
-        # TODO decide a better name for results
         max_k = kwargs.get('max_k',10)
 
         results.setdefault('evaluation',{})
@@ -83,7 +84,51 @@ class EvaluationHandler:
 
         results['evaluation']['query_matches']['relevant_positions']=relevant_positions
 
-        print(f'evaluation {results["evaluation"]}')
+        print('QM Evaluation {}'.format(results['evaluation']['query_matches']))
+
+    def evaluate_candidate_networks(self,results,**kwargs):
+        max_k = kwargs.get('max_k',10)
+
+        results.setdefault('evaluation',{})
+        results['evaluation']['candidate_networks']={}
+
+        relevant_positions = []
+        for item in results['results']:
+
+            if 'candidate_networks' in item:
+                golden_cn = self.golden_standards[item['keyword_query']]['candidate_networks'][0]
+
+                candidate_networks = [CandidateNetwork.from_json_serializable(json_serializable_cn)
+                                 for json_serializable_cn in item['candidate_networks']]
+
+                relevant_position = self.get_relevant_position(candidate_networks,golden_cn)
+
+                relevant_positions.append(relevant_position)
+
+        results['evaluation']['candidate_networks']['mrr'] = self.get_mean_reciprocal_rank(relevant_positions)
+
+        precision_at_k = {f'p@{k}' : self.get_precision_at_k(k,relevant_positions)
+                          for k in range(1,max_k+1)}
+        results['evaluation']['candidate_networks'].update(precision_at_k)
+
+        results['evaluation']['candidate_networks']['relevant_positions']=relevant_positions
+
+        print('CN Evaluation {}'.format(results['evaluation']['candidate_networks']))
+
+
+    def evaluate_performance(self,results,**kwargs):
+        results.setdefault('evaluation',{})
+        results['evaluation']['performance']={}
+
+        relevant_positions = []
+        for item in results['results']:
+
+            if 'elapsed_time' in item:
+                for phase in item['elapsed_time']:
+                    results['evaluation']['performance'].setdefault(phase,[]).append(item['elapsed_time'][phase])
+
+
+
 
     def get_relevant_position(self,items,ground_truth):
         for i,item in enumerate(items):

@@ -76,11 +76,16 @@ class CandidateNetwork(Graph):
         for (keyword_match,alias),(neighbour_keyword_match,neighbour_alias) in self.edges():
             yield (keyword_match,neighbour_keyword_match)
 
+    def calculate_score(self, query_match):
+         self.score = query_match.total_score/len(self)
+
     def __eq__(self, other):
         return hash(self)==hash(other) and isinstance(other,CandidateNetwork)
 
-    #Although this is a multable object, we made the hash function since it is not supposed to change after inserted in the list of generated cns
+    
     def __hash__(self):
+        #Although this is a multable object, we made the hash function since it is not supposed
+        #to change after inserted in the list of generated cns
         return hash((frozenset(Counter(self.unaliased_edges()).items()),frozenset(self.keyword_matches())))
 
     def __repr__(self):

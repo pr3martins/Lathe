@@ -1,7 +1,9 @@
 import json
 import string
+from timeit import default_timer as timer
 
-from utils import ConfigHandler, Similarity, get_logger, Tokenizer,timestr
+
+from utils import ConfigHandler, Similarity, get_logger, Tokenizer,timestr, next_path
 from index import IndexHandler
 from keyword_match import KeywordMatchHandler
 from query_match import QueryMatchHandler
@@ -17,8 +19,7 @@ class Mapper:
 
         self.tokenizer = Tokenizer(tokenize_method = 'simple')
         self.index_handler.load_indexes(self.config.value_index_filename,
-            self.config.schema_index_filename,
-            keywords=['title','atticus','finch']
+            self.config.schema_index_filename
         )
         self.index_handler.create_schema_graph()
         self.similarity = Similarity(self.index_handler.schema_index)
@@ -41,7 +42,15 @@ class Mapper:
         results_filename = kwargs.get('results_filename',None)
 
         results =[]
-        for item in self.queryset[30:]:
+
+        keywords_to_load = {keyword for item in self.queryset for keyword in set(self.tokenizer.keywords(item['keyword_query']))}
+
+        self.index_handler.load_indexes(self.config.value_index_filename,
+            self.config.schema_index_filename,
+            keywords = keywords_to_load
+        )
+
+        for item in self.queryset:
             keyword_query = item['keyword_query']
 
             print(f'Running keyword search for query: {keyword_query}')
@@ -55,18 +64,21 @@ class Mapper:
         }
 
         if results_filename is None:
-            results_filename = f'{self.config.results_directory}results-{self.config.database_config}-{timestr()}.json'
+            results_filename = next_path(f'{self.config.results_directory}results-{self.config.database_config}-%03d.json')
 
         with open(results_filename,mode='w') as f:
             logger.info(f'Writing results in {results_filename}')
-            json.dump(data,f)
+            json.dump(data,f, indent = 4)
 
         return data
 
 
     def keyword_search(self,keyword_query):
-        keywords =  self.tokenizer.keywords(keyword_query)
-        compound_keywords =  self.tokenizer.compound_keywords(keyword_query)
+        
+        start_kws_time = timer()
+
+        keywords =  set(self.tokenizer.keywords(keyword_query))
+        compound_keywords =  set(self.tokenizer.compound_keywords(keyword_query))
 
         print(f'Keywords: {keywords}\nCompound Keywords: {compound_keywords}')
 
@@ -87,21 +99,27 @@ class Mapper:
 
         print(f'Num Keyword Matches: {len(kw_matches)}')
         print(f'Num Keyword Matches: {len(keywords_from_kw_matches)}')
+        
+        start_qm_time = timer()
 
         query_matches = self.query_match_handler.generate_query_matches(keywords, kw_matches)
 
-        self.query_match_handler.rank_query_matches(query_matches,
+        print(f'{len(query_matches)} QMs generated')
+
+        ranked_query_matches = self.query_match_handler.rank_query_matches(query_matches,
             self.index_handler.value_index,
             self.index_handler.schema_index,
             self.similarity)
 
-        query_matches = query_matches[:10]
+        ranked_query_matches = ranked_query_matches[:10]
 
-        print(f'Query Matches: {query_matches}')
+        print(f'Ranked Query Matches: {ranked_query_matches}')
 
-        #TODO Add candidate networks
+        start_cn_time = timer()
         schema_graph = self.index_handler.schema_graph
         ranked_cns = self.candidate_network_handler.generate_cns(self.index_handler.schema_index,schema_graph,query_matches)
+
+        end_cn_time = timer()
 
         for i,(candidate_network) in enumerate(ranked_cns[:3]):
             print(f'{i+1} CN:\n{candidate_network}\n')
@@ -110,12 +128,18 @@ class Mapper:
 
         result = {
             'keyword_query':keyword_query,
-            'keywords':keywords,
-            'compound_keywords':compound_keywords,
+            'keywords':list(keywords),
+            'compound_keywords':list(compound_keywords),
             'query_matches':[query_match.to_json_serializable()
                              for query_match in query_matches],
             'candidate_networks': [candidate_network.to_json_serializable()
                                    for candidate_network in ranked_cns],
+            'elapsed_time': {
+                'km':start_qm_time-start_kws_time,
+                'qm':start_cn_time-start_qm_time,
+                'cn':end_cn_time-start_cn_time,
+                'total':end_cn_time-start_kws_time,
+            }
         }
 
         return result

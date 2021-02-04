@@ -34,6 +34,7 @@ class ValueIndex():
         elif self.persistant_filename:
             with shelve.open(self.persistant_filename,flag='r') as storage:
                 item = storage[keyword]
+                self._set_underlying_item(keyword,item)
         if item is None:
             raise KeyError('The keyword {keyword} is not in the ValueIndex.')
         return item

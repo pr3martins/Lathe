@@ -57,6 +57,7 @@ class CandidateNetworkHandler:
         cur_jnkm.add_vertex(query_match.get_random_keyword_match())
 
         if len(query_match)==1:
+            cur_jnkm.calculate_score(query_match)
             returned_cns.append(cur_jnkm)
             return returned_cns
 
@@ -99,6 +100,8 @@ class CandidateNetworkHandler:
                                     if next_jnkm.contains_keyword_free_match_leaf():
                                         current_time = timer()
                                         gns_elapsed_time.append(current_time-start_time)
+
+                                        next_jnkm.calculate_score(query_match)
                                         returned_cns.append(next_jnkm)
                                     else:
                                         #reduce JNKM
@@ -148,14 +151,11 @@ class CandidateNetworkHandler:
                 if(candidate_network not in returned_cns):
                     if num_cns_available<=0:
                         break
-
-                    #Dividindo score pelo tamanho da cn (SEGUNDA PARTE DO RANKING)
-                    candidate_network.score = qm_score/len(candidate_network)
+                        
                     returned_cns.append(candidate_network)
 
                     num_cns_available -=1
 
-        #Ordena CNs pelo CnScore
         ranked_cns=sorted(returned_cns,key=lambda candidate_network: candidate_network.score,reverse=True)
 
         return ranked_cns
