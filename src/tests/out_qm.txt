@@ -1,0 +1,516 @@
+SCHEMA CREATED
+{'borders': {'__search_id': {'max_frequency': 1, 'norm': 66.59353239491274},
+             'country1': {'max_frequency': 0, 'norm': 0.0},
+             'country2': {'max_frequency': 0, 'norm': 0.0},
+             'length': {'max_frequency': 4, 'norm': 78.33610321777543}},
+ 'city': {'__search_id': {'max_frequency': 1, 'norm': 260.48888753486136},
+          'country': {'max_frequency': 0, 'norm': 0.0},
+          'latitude': {'max_frequency': 2333, 'norm': 4487.163906390074},
+          'longitude': {'max_frequency': 2333, 'norm': 4483.823072633304},
+          'name': {'max_frequency': 36, 'norm': 380.2719722437978},
+          'population': {'max_frequency': 451, 'norm': 911.5289055984449},
+          'province': {'max_frequency': 0, 'norm': 0.0}},
+ 'continent': {'__search_id': {'max_frequency': 1, 'norm': 10.281261983574595},
+               'area': {'max_frequency': 1, 'norm': 10.866870894049395},
+               'name': {'max_frequency': 1, 'norm': 10.017256814995429}},
+ 'country': {'__search_id': {'max_frequency': 1, 'norm': 67.03734498480831},
+             'area': {'max_frequency': 2, 'norm': 59.56304349790744},
+             'capital': {'max_frequency': 0, 'norm': 0.0},
+             'code': {'max_frequency': 0, 'norm': 0.0},
+             'name': {'max_frequency': 4, 'norm': 67.77969794057856},
+             'population': {'max_frequency': 1, 'norm': 61.09083068414722},
+             'province': {'max_frequency': 0, 'norm': 0.0}},
+ 'desert': {'__search_id': {'max_frequency': 1, 'norm': 26.501717503609196},
+            'area': {'max_frequency': 5, 'norm': 30.5082694291888},
+            'name': {'max_frequency': 7, 'norm': 56.55861957377476}},
+ 'economy': {'__search_id': {'max_frequency': 1, 'norm': 66.73496490829658},
+             'agriculture': {'max_frequency': 46, 'norm': 96.60153454382704},
+             'country': {'max_frequency': 0, 'norm': 0.0},
+             'gdp': {'max_frequency': 4, 'norm': 64.84832567433473},
+             'industry': {'max_frequency': 51, 'norm': 114.68941340199426},
+             'inflation': {'max_frequency': 13, 'norm': 47.680915784131535},
+             'service': {'max_frequency': 51, 'norm': 114.64642975857862}},
+ 'encompasses': {'__search_id': {'max_frequency': 1, 'norm': 67.24021086055822},
+                 'continent': {'max_frequency': 0, 'norm': 0.0},
+                 'country': {'max_frequency': 0, 'norm': 0.0},
+                 'percentage': {'max_frequency': 192,
+                                'norm': 487.06130947079356}},
+ 'ethnic_group': {'__search_id': {'max_frequency': 1,
+                                  'norm': 109.06428881946057},
+                  'country': {'max_frequency': 0, 'norm': 0.0},
+                  'name': {'max_frequency': 27, 'norm': 279.7915192468314},
+                  'percentage': {'max_frequency': 46,
+                                 'norm': 124.34853463779115}},
+ 'geo_desert': {'__search_id': {'max_frequency': 1, 'norm': 36.68861262834616},
+                'country': {'max_frequency': 0, 'norm': 0.0},
+                'desert': {'max_frequency': 0, 'norm': 0.0},
+                'province': {'max_frequency': 0, 'norm': 0.0}},
+ 'geo_island': {'__search_id': {'max_frequency': 1, 'norm': 69.96695122214275},
+                'country': {'max_frequency': 0, 'norm': 0.0},
+                'island': {'max_frequency': 0, 'norm': 0.0},
+                'province': {'max_frequency': 0, 'norm': 0.0}},
+ 'geo_lake': {'__search_id': {'max_frequency': 1, 'norm': 62.107514731925434},
+              'country': {'max_frequency': 0, 'norm': 0.0},
+              'lake': {'max_frequency': 0, 'norm': 0.0},
+              'province': {'max_frequency': 0, 'norm': 0.0}},
+ 'geo_mountain': {'__search_id': {'max_frequency': 1,
+                                  'norm': 48.31879555050686},
+                  'country': {'max_frequency': 0, 'norm': 0.0},
+                  'mountain': {'max_frequency': 0, 'norm': 0.0},
+                  'province': {'max_frequency': 0, 'norm': 0.0}},
+ 'geo_river': {'__search_id': {'max_frequency': 1, 'norm': 104.43443764918574},
+               'country': {'max_frequency': 0, 'norm': 0.0},
+               'province': {'max_frequency': 0, 'norm': 0.0},
+               'river': {'max_frequency': 0, 'norm': 0.0}},
+ 'geo_sea': {'__search_id': {'max_frequency': 1, 'norm': 116.43048121082393},
+             'country': {'max_frequency': 0, 'norm': 0.0},
+             'province': {'max_frequency': 0, 'norm': 0.0},
+             'sea': {'max_frequency': 0, 'norm': 0.0}},
+ 'is_member': {'__search_id': {'max_frequency': 1, 'norm': 425.8045647912214},
+               'country': {'max_frequency': 0, 'norm': 0.0},
+               'organization': {'max_frequency': 0, 'norm': 0.0},
+               'type': {'max_frequency': 6839, 'norm': 28672.566555369973}},
+ 'island': {'__search_id': {'max_frequency': 1, 'norm': 61.62911507918228},
+            'area': {'max_frequency': 91, 'norm': 178.18815390924607},
+            'coordinates': {'max_frequency': 7, 'norm': 46.414155689750416},
+            'islands': {'max_frequency': 46, 'norm': 208.98927660419665},
+            'name': {'max_frequency': 16, 'norm': 88.59706544073003}},
+ 'lake': {'__search_id': {'max_frequency': 1, 'norm': 45.712116368029285},
+          'area': {'max_frequency': 24, 'norm': 56.778548854065136},
+          'name': {'max_frequency': 62, 'norm': 267.7879029955174}},
+ 'language': {'__search_id': {'max_frequency': 1, 'norm': 50.84850923637378},
+              'country': {'max_frequency': 0, 'norm': 0.0},
+              'name': {'max_frequency': 10, 'norm': 87.63138033730986},
+              'percentage': {'max_frequency': 31, 'norm': 82.15055648066735}},
+ 'located': {'__search_id': {'max_frequency': 1, 'norm': 78.2757056109957},
+             'city': {'max_frequency': 0, 'norm': 0.0},
+             'country': {'max_frequency': 0, 'norm': 0.0},
+             'lake': {'max_frequency': 0, 'norm': 0.0},
+             'province': {'max_frequency': 0, 'norm': 0.0},
+             'river': {'max_frequency': 0, 'norm': 0.0},
+             'sea': {'max_frequency': 0, 'norm': 0.0}},
+ 'merges_with': {'__search_id': {'max_frequency': 1, 'norm': 28.22786100758356},
+                 'sea1': {'max_frequency': 0, 'norm': 0.0},
+                 'sea2': {'max_frequency': 0, 'norm': 0.0}},
+ 'mountain': {'__search_id': {'max_frequency': 1, 'norm': 45.847378528082636},
+              'coordinates': {'max_frequency': 6, 'norm': 55.497506983921866},
+              'height': {'max_frequency': 2, 'norm': 39.12851434066488},
+              'name': {'max_frequency': 12, 'norm': 96.5653148443534}},
+ 'organization': {'__search_id': {'max_frequency': 1,
+                                  'norm': 62.69369428414702},
+                  'abbreviation': {'max_frequency': 1,
+                                   'norm': 59.829396803022355},
+                  'city': {'max_frequency': 0, 'norm': 0.0},
+                  'country': {'max_frequency': 0, 'norm': 0.0},
+                  'established': {'max_frequency': 44,
+                                  'norm': 270.0455006396954},
+                  'name': {'max_frequency': 30, 'norm': 367.8570780523777},
+                  'province': {'max_frequency': 0, 'norm': 0.0}},
+ 'politics': {'__search_id': {'max_frequency': 1, 'norm': 67.72657997795267},
+              'country': {'max_frequency': 0, 'norm': 0.0},
+              'government': {'max_frequency': 109, 'norm': 510.977193155258},
+              'independence': {'max_frequency': 56, 'norm': 338.5578987950149}},
+ 'population': {'__search_id': {'max_frequency': 1, 'norm': 67.6808493444305},
+                'country': {'max_frequency': 0, 'norm': 0.0},
+                'infant_mortality': {'max_frequency': 6,
+                                     'norm': 51.55617023237838},
+                'population_growth': {'max_frequency': 6,
+                                      'norm': 61.03788481102325}},
+ 'province': {'__search_id': {'max_frequency': 1, 'norm': 180.29577570289774},
+              'area': {'max_frequency': 31, 'norm': 175.36557354884877},
+              'capital': {'max_frequency': 0, 'norm': 0.0},
+              'capprov': {'max_frequency': 0, 'norm': 0.0},
+              'country': {'max_frequency': 0, 'norm': 0.0},
+              'name': {'max_frequency': 50, 'norm': 360.3266666567572},
+              'population': {'max_frequency': 2, 'norm': 178.3295891641006}},
+ 'religion': {'__search_id': {'max_frequency': 1, 'norm': 97.57340210063101},
+              'country': {'max_frequency': 0, 'norm': 0.0},
+              'name': {'max_frequency': 93, 'norm': 783.8080776258199},
+              'percentage': {'max_frequency': 21, 'norm': 110.66956994670434}},
+ 'river': {'__search_id': {'max_frequency': 1, 'norm': 56.953540030116066},
+           'lake': {'max_frequency': 0, 'norm': 0.0},
+           'length': {'max_frequency': 42, 'norm': 90.19883867619},
+           'name': {'max_frequency': 3, 'norm': 65.75747812920285},
+           'river': {'max_frequency': 0, 'norm': 0.0},
+           'sea': {'max_frequency': 0, 'norm': 0.0}},
+ 'sea': {'__search_id': {'max_frequency': 1, 'norm': 23.306841526223884},
+         'depth': {'max_frequency': 2, 'norm': 19.593323437710463},
+         'name': {'max_frequency': 16, 'norm': 68.14887205148167}}}
+1a Keyword Query: thailand
+Relevant QM at position 1
+{COUNTRY.v(name{thailand})}
+
+2a Keyword Query: netherlands
+Relevant QM at position 1
+{COUNTRY.v(name{netherlands})}
+
+3a Keyword Query: georgia
+Relevant QM at position 2
+{ISLAND.v(name{georgia})}
+
+{COUNTRY.v(name{georgia})}
+
+4a Keyword Query: country china
+Relevant QM at position 13
+{COUNTRY.v(name{china}), ISLAND.s(area{country})}
+
+{ISLAND.s(area{country}), SEA.v(name{china})}
+
+{COUNTRY.v(name{china}), RELIGION.s(country{country})}
+
+{RELIGION.s(country{country}), SEA.v(name{china})}
+
+{COUNTRY.v(name{china}), CONTINENT.s(area{country})}
+
+{CONTINENT.s(area{country}), SEA.v(name{china})}
+
+{COUNTRY.v(name{china}), IS_MEMBER.s(country{country})}
+
+{IS_MEMBER.s(country{country}), SEA.v(name{china})}
+
+{COUNTRY.v(name{china}), POLITICS.s(country{country})}
+
+{POLITICS.s(country{country}), SEA.v(name{china})}
+
+{COUNTRY.v(name{china}), ENCOMPASSES.s(country{country})}
+
+{ENCOMPASSES.s(country{country}), SEA.v(name{china})}
+
+{COUNTRY.s(*{country}).v(name{china})}
+
+5a Keyword Query: bangladesh
+Relevant QM at position 1
+{COUNTRY.v(name{bangladesh})}
+
+6a Keyword Query: alexandria
+Relevant QM at position 1
+{CITY.v(name{alexandria})}
+
+7a Keyword Query: sonsonate
+Relevant QM at position 1
+{CITY.v(name{sonsonate})}
+
+8a Keyword Query: xiaogan
+Relevant QM at position 1
+{CITY.v(name{xiaogan})}
+
+9a Keyword Query: city glendale
+Relevant QM at position 3
+{ORGANIZATION.s(city{city}), CITY.v(name{glendale})}
+
+{LOCATED.s(city{city}), CITY.v(name{glendale})}
+
+{CITY.s(*{city}).v(name{glendale})}
+
+10a Keyword Query: city granada
+Relevant QM at position 3
+{CITY.v(name{granada}), ORGANIZATION.s(city{city})}
+
+{LOCATED.s(city{city}), CITY.v(name{granada})}
+
+{CITY.s(*{city}).v(name{granada})}
+
+11a Keyword Query: Lake Kariba
+Relevant QM at position 1
+{LAKE.v(name{lake,kariba})}
+
+12a Keyword Query: Niger
+Relevant QM at position 2
+{COUNTRY.v(name{niger})}
+
+{RIVER.v(name{niger})}
+
+13a Keyword Query: Arabian Sea
+Relevant QM at position 1
+{SEA.v(name{sea,arabian})}
+
+14a Keyword Query: Asauad
+Relevant QM at position 1
+{DESERT.v(name{asauad})}
+
+15a Keyword Query: Sardegna
+Relevant QM at position 1
+{ISLAND.v(name{sardegna})}
+
+16a Keyword Query: arab cooperation council
+Relevant QM at position 1
+{ORGANIZATION.v(name{cooperation,arab,council})}
+
+17a Keyword Query: world labor
+Relevant QM at position 1
+{ORGANIZATION.v(name{labor,world})}
+
+18a Keyword Query: islamic conference
+Relevant QM at position 1
+{ORGANIZATION.v(name{conference,islamic})}
+
+19a Keyword Query: 30 group
+Relevant QM at position -1
+{ORGANIZATION.v(abbreviation{30},name{group,30})}
+
+{ORGANIZATION.v(name{group}), CITY.v(latitude{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), CITY.v(latitude{30})}
+
+{ORGANIZATION.v(name{group}), CITY.v(longitude{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), CITY.v(longitude{30})}
+
+{ORGANIZATION.v(name{group}), ECONOMY.v(industry{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), ECONOMY.v(industry{30})}
+
+{ORGANIZATION.v(name{group}), ECONOMY.v(service{30})}
+
+{ECONOMY.v(service{30}), ORGANIZATION.v(abbreviation{group},name{group})}
+
+{ORGANIZATION.v(name{group}), ECONOMY.v(agriculture{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), ECONOMY.v(agriculture{30})}
+
+{ORGANIZATION.v(name{group}), ETHNIC_GROUP.v(percentage{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), ETHNIC_GROUP.v(percentage{30})}
+
+{ORGANIZATION.v(name{group}), LANGUAGE.v(percentage{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), LANGUAGE.v(percentage{30})}
+
+{ORGANIZATION.v(name{group}), BORDERS.v(__search_id{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), BORDERS.v(__search_id{30})}
+
+{ORGANIZATION.v(name{group}), POLITICS.v(independence{30})}
+
+{POLITICS.v(independence{30}), ORGANIZATION.v(abbreviation{group},name{group})}
+
+{ORGANIZATION.v(name{group}), ORGANIZATION.v(established{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), ORGANIZATION.v(established{30})}
+
+{ORGANIZATION.v(name{group}), RELIGION.v(percentage{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), RELIGION.v(percentage{30})}
+
+{ORGANIZATION.v(name{group}), ECONOMY.v(inflation{30},agriculture{30})}
+
+{ORGANIZATION.v(abbreviation{group},name{group}), ECONOMY.v(inflation{30},agriculture{30})}
+
+20a Keyword Query: caribbean economic
+Relevant QM at position 1
+{ORGANIZATION.v(name{caribbean,economic})}
+
+21a Keyword Query: cameroon economy
+Relevant QM at position 2
+{ETHNIC_GROUP.v(name{cameroon}), ECONOMY.s(*{economy})}
+
+{ECONOMY.s(*{economy}), COUNTRY.v(name{cameroon})}
+
+22a Keyword Query: nigeria gdp
+Relevant QM at position 1
+{ECONOMY.s(gdp{gdp}), COUNTRY.v(name{nigeria})}
+
+23a Keyword Query: mongolia republic
+Relevant QM at position 3
+{COUNTRY.v(name{mongolia}), COUNTRY.v(name{republic})}
+
+{PROVINCE.v(name{mongolia}), COUNTRY.v(name{republic})}
+
+{COUNTRY.v(name{mongolia}), POLITICS.v(government{republic})}
+
+24a Keyword Query: kiribati politics
+Relevant QM at position 1
+{POLITICS.s(*{politics}), COUNTRY.v(name{kiribati})}
+
+25a Keyword Query: poland language
+Relevant QM at position 1
+{COUNTRY.v(name{poland}), LANGUAGE.s(*{language})}
+
+26a Keyword Query: spain galician
+Relevant QM at position 2
+{CITY.v(name{spain}), LANGUAGE.v(name{galician})}
+
+{LANGUAGE.v(name{galician}), COUNTRY.v(name{spain})}
+
+27a Keyword Query: uzbekistan eastern orthodox
+Relevant QM at position 1
+{RELIGION.v(name{eastern,orthodox}), COUNTRY.v(name{uzbekistan})}
+
+28a Keyword Query: haiti religion
+Relevant QM at position 1
+{RELIGION.s(*{religion}), COUNTRY.v(name{haiti})}
+
+29a Keyword Query: suriname ethnic_group
+Relevant QM at position -1
+30a Keyword Query: slovakia german
+Relevant QM at position 1
+{COUNTRY.v(name{slovakia}), ETHNIC_GROUP.v(name{german})}
+
+31a Keyword Query: poland cape verde organization
+Relevant QM at position 3
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{verde,cape}), COUNTRY.v(name{poland})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{verde,cape}), COUNTRY.v(name{poland})}
+
+{COUNTRY.v(name{verde,cape}), COUNTRY.v(name{poland}), ORGANIZATION.s(*{organization})}
+
+32a Keyword Query: saint kitts cambodia organization
+Relevant QM at position 8
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{cambodia}), ISLAND.v(name{saint,kitts})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{saint,kitts}), COUNTRY.v(name{cambodia})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{saint,kitts}), COUNTRY.v(name{cambodia})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{cambodia}), ISLAND.v(name{saint,kitts})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{saint,kitts}), PROVINCE.v(name{cambodia})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{saint,kitts}), PROVINCE.v(name{cambodia})}
+
+{COUNTRY.v(name{cambodia}), ISLAND.v(name{saint,kitts}), ORGANIZATION.s(*{organization})}
+
+{COUNTRY.v(name{saint,kitts}), COUNTRY.v(name{cambodia}), ORGANIZATION.s(*{organization})}
+
+33a Keyword Query: marshall islands grenadines organization
+Relevant QM at position 5
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{grenadines}), COUNTRY.v(name{marshall,islands})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{grenadines}), PROVINCE.v(name{marshall,islands})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{grenadines}), COUNTRY.v(name{marshall,islands})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{grenadines}), PROVINCE.v(name{marshall,islands})}
+
+{COUNTRY.v(name{grenadines}), COUNTRY.v(name{marshall,islands}), ORGANIZATION.s(*{organization})}
+
+34a Keyword Query: czech republic cote divoire organization
+Relevant QM at position 3
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{czech,republic}), COUNTRY.v(name{divoire,cote})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{czech,republic}), PROVINCE.v(name{divoire,cote})}
+
+{COUNTRY.v(name{czech,republic}), COUNTRY.v(name{divoire,cote}), ORGANIZATION.s(*{organization})}
+
+35a Keyword Query: panama oman organization
+Relevant QM at position 8
+{IS_MEMBER.s(organization{organization}), CITY.v(name{panama}), COUNTRY.v(name{oman})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{panama}), COUNTRY.v(name{oman})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{panama}), COUNTRY.v(name{oman})}
+
+{IS_MEMBER.s(organization{organization}), CITY.v(name{panama}), PROVINCE.v(name{oman})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{panama}), PROVINCE.v(name{oman})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{panama}), PROVINCE.v(name{oman})}
+
+{CITY.v(name{panama}), COUNTRY.v(name{oman}), ORGANIZATION.s(*{organization})}
+
+{COUNTRY.v(name{panama}), COUNTRY.v(name{oman}), ORGANIZATION.s(*{organization})}
+
+36a Keyword Query: iceland mali organization
+Relevant QM at position 7
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{mali}), COUNTRY.v(name{iceland})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{mali}), COUNTRY.v(name{iceland})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{mali}), PROVINCE.v(name{iceland})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{mali}), PROVINCE.v(name{iceland})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{mali}), ISLAND.v(islands{iceland},name{iceland})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{mali}), ISLAND.v(islands{iceland},name{iceland})}
+
+{COUNTRY.v(name{mali}), COUNTRY.v(name{iceland}), ORGANIZATION.s(*{organization})}
+
+37a Keyword Query: guyana sierra leone organization
+Relevant QM at position 5
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{leone,sierra}), COUNTRY.v(name{guyana})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{leone,sierra}), COUNTRY.v(name{guyana})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{guyana}), COUNTRY.v(name{leone,sierra})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{guyana}), PROVINCE.v(name{leone,sierra})}
+
+{COUNTRY.v(name{leone,sierra}), COUNTRY.v(name{guyana}), ORGANIZATION.s(*{organization})}
+
+38a Keyword Query: mauritius india organization
+Relevant QM at position 7
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{india}), COUNTRY.v(name{mauritius})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{mauritius}), ORGANIZATION.v(name{india})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{india}), PROVINCE.v(name{mauritius})}
+
+{IS_MEMBER.s(organization{organization}), ORGANIZATION.v(name{india}), PROVINCE.v(name{mauritius})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{india}), ISLAND.v(islands{mauritius},name{mauritius})}
+
+{IS_MEMBER.s(organization{organization}), ISLAND.v(islands{mauritius},name{mauritius}), ORGANIZATION.v(name{india})}
+
+{COUNTRY.v(name{mauritius}), COUNTRY.v(name{india}), ORGANIZATION.s(*{organization})}
+
+39a Keyword Query: vanuatu afghanistan organization
+Relevant QM at position 7
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{vanuatu}), COUNTRY.v(name{afghanistan})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{vanuatu}), COUNTRY.v(name{afghanistan})}
+
+{IS_MEMBER.s(organization{organization}), ISLAND.v(name{vanuatu},islands{vanuatu}), COUNTRY.v(name{afghanistan})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{vanuatu}), PROVINCE.v(name{afghanistan})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{vanuatu}), PROVINCE.v(name{afghanistan})}
+
+{IS_MEMBER.s(organization{organization}), ISLAND.v(name{vanuatu},islands{vanuatu}), PROVINCE.v(name{afghanistan})}
+
+{COUNTRY.v(name{afghanistan}), COUNTRY.v(name{vanuatu}), ORGANIZATION.s(*{organization})}
+
+40a Keyword Query: libya australia organization
+Relevant QM at position 11
+{IS_MEMBER.s(organization{organization}), CONTINENT.v(name{australia}), COUNTRY.v(name{libya})}
+
+{IS_MEMBER.s(organization{organization}), CONTINENT.v(name{australia}), PROVINCE.v(name{libya})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{libya}), COUNTRY.v(name{australia})}
+
+{IS_MEMBER.s(organization{organization}), COUNTRY.v(name{australia}), PROVINCE.v(name{libya})}
+
+{IS_MEMBER.s(organization{organization}), ORGANIZATION.v(name{australia}), COUNTRY.v(name{libya})}
+
+{IS_MEMBER.s(organization{organization}), ORGANIZATION.v(name{australia}), PROVINCE.v(name{libya})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{australia}), COUNTRY.v(name{libya})}
+
+{IS_MEMBER.s(organization{organization}), PROVINCE.v(name{australia}), PROVINCE.v(name{libya})}
+
+{CONTINENT.v(name{australia}), COUNTRY.v(name{libya}), ORGANIZATION.s(*{organization})}
+
+{CONTINENT.v(name{australia}), PROVINCE.v(name{libya}), ORGANIZATION.s(*{organization})}
+
+{COUNTRY.v(name{australia}), COUNTRY.v(name{libya}), ORGANIZATION.s(*{organization})}
+
+41a Keyword Query: hutu africa
+Relevant QM at position 1
+{ETHNIC_GROUP.v(name{hutu}), CONTINENT.v(name{africa})}
+
+42a Keyword Query: serb europe
+Relevant QM at position 1
+{CONTINENT.v(name{europe}), ETHNIC_GROUP.v(name{serb})}
+
+43a Keyword Query: uzbek asia
+Relevant QM at position 1
+{CONTINENT.v(name{asia}), ETHNIC_GROUP.v(name{uzbek})}
+
+44a Keyword Query: rhein germany
+Relevant QM at position 1
+{COUNTRY.v(name{germany}), RIVER.v(name{rhein})}
+
+45a Keyword Query: egypt nile
+Relevant QM at position 1
+{COUNTRY.v(name{egypt}), RIVER.v(name{nile})}
+

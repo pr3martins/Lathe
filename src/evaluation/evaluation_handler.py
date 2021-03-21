@@ -3,7 +3,7 @@ import json
 import sys
 from collections import OrderedDict
 
-from utils import ConfigHandler,get_logger,timestr,next_path
+from utils import ConfigHandler,get_logger,timestr,next_path,last_path
 from query_match import QueryMatch
 from candidate_network import CandidateNetwork
 
@@ -16,7 +16,7 @@ class EvaluationHandler:
 
 
     def load_golden_standards(self):
-        with open(self.config.golden_standards_file,mode='r') as f:
+        with open(self.config.queryset_file,mode='r') as f:
             data = json.load(f)
 
         golden_standards = OrderedDict()
@@ -34,8 +34,14 @@ class EvaluationHandler:
 
         self.golden_standards = golden_standards
 
-    def load_results_from_file(self,filename):
-        with open(filename,mode='r') as f:
+    def load_results_from_file(self,**kwargs):
+        approach = kwargs.get('approach','standard')
+        results_filename = kwargs.get(
+            'results_filename',
+            last_path(f'{self.config.results_directory}{self.config.queryset_name}-{approach}-%03d.json')
+        )
+
+        with open(results_filename,mode='r') as f:
             data = json.load(f)
         return data
 
@@ -46,16 +52,22 @@ class EvaluationHandler:
         default value is only set later to get a timestamp more accurate.
         '''
         results_filename = kwargs.get('results_filename',None)
+        approach = kwargs.get('approach','standard')
 
         self.evaluate_query_matches(results)
         self.evaluate_candidate_networks(results)
         self.evaluate_performance(results)
+        self.evaluate_num_keyword_matches(results)
+        self.evaluate_num_query_matches(results)
 
         if results_filename is None:
-            results_filename = next_path(f'{self.config.results_directory}evaluated-results-{self.config.database_config}-%03d.json')
-            with open(results_filename,mode='w') as f:
-                logger.info(f'Writing evaluated results in {results_filename}')
-                json.dump(results,f, indent = 4)
+            results_filename = next_path(f'{self.config.results_directory}{self.config.queryset_name}-{approach}-%03d.json')
+        
+        with open(results_filename,mode='w') as f:
+            logger.info(f'Writing evaluated results in {results_filename}')
+            json.dump(results,f, indent = 4)
+
+        return results
 
     def evaluate_query_matches(self,results,**kwargs):
         max_k = kwargs.get('max_k',10)
@@ -126,6 +138,26 @@ class EvaluationHandler:
             if 'elapsed_time' in item:
                 for phase in item['elapsed_time']:
                     results['evaluation']['performance'].setdefault(phase,[]).append(item['elapsed_time'][phase])
+
+    def evaluate_num_keyword_matches(self,results,**kwargs):
+        results.setdefault('evaluation',{})
+        results['evaluation']['num_keyword_matches']=[]
+
+        relevant_positions = []
+        for item in results['results']:
+
+            if 'num_keyword_matches' in item:
+                results['evaluation']['num_keyword_matches'].append(item['num_keyword_matches'])
+
+    def evaluate_num_query_matches(self,results,**kwargs):
+        results.setdefault('evaluation',{})
+        results['evaluation']['num_query_matches']=[]
+
+        relevant_positions = []
+        for item in results['results']:
+
+            if 'num_query_matches' in item:
+                results['evaluation']['num_query_matches'].append(item['num_query_matches'])
 
 
 

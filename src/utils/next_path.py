@@ -1,6 +1,14 @@
 from os.path import exists
 
 def next_path(path_pattern):
+    b = get_filename_num(path_pattern)
+    return path_pattern % (b+1)
+
+def last_path(path_pattern):
+    b = get_filename_num(path_pattern)
+    return path_pattern % b
+
+def get_filename_num(path_pattern):
     """
     Finds the next free path in an sequentially named list of files
 
@@ -25,4 +33,4 @@ def next_path(path_pattern):
         c = (a + b) // 2 # interval midpoint
         a, b = (c, b) if exists(path_pattern % c) else (a, c)
 
-    return path_pattern % b
+    return b-1

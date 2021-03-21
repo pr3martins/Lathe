@@ -48,29 +48,25 @@ class KeywordMatchHandler:
                     P[vkm] = set(ctids)
 
         #Part 2: Find sets of tuples containing larger termsets
-        self.tupleset_iterator(P, check_attributes=True)
-        self.tupleset_iterator(P, check_attributes=False)
+        P = self.disjoint_itemsets(P)
 
         #Part 3: Ignore tuples
-        return set(P)
+        return list(P)
 
-    def tupleset_iterator(self, P, check_attributes=False):
+    def disjoint_itemsets(self, pool):
         #Input: A Set of non-empty tuple-sets for each keyword alone P
         #Output: The Set P, but now including larger termsets (process Intersections)
 
         '''
         Termset is any non-empty subset K of the terms of a query Q
         '''
-
-        for ( vkm_i , vkm_j ) in itertools.combinations(P,2):
-
-            #print("Analysing: {} {} with {} elements in common".format(vkm_i, vkm_j, len(P[vkm_i] & P[vkm_j])))
-            if (vkm_i.table == vkm_j.table and
-                set(vkm_i.keywords()).isdisjoint(vkm_j.keywords())
-               ) and ((check_attributes and vkm_i.has_same_attribute(vkm_j))
-               or not check_attributes):
-                #print("merging: {} {}".format(vkm_i, vkm_j))
-                joint_tuples = P[vkm_i] & P[vkm_j]
+        
+        delayed_removal = {}
+        next_stage_pool = {}
+        
+        for ( vkm_i , vkm_j ) in itertools.combinations(pool,2):
+            if vkm_i.table == vkm_j.table:
+                joint_tuples = pool[vkm_i] & pool[vkm_j]
 
                 if len(joint_tuples)>0:
 
@@ -83,18 +79,20 @@ class KeywordMatchHandler:
                         joint_predicates.setdefault(attribute,set()).update(keywords)
 
                     vkm_ij = KeywordMatch(vkm_i.table,value_filter=joint_predicates)
-                    P[vkm_ij] = joint_tuples
+                    next_stage_pool[vkm_ij] = joint_tuples
 
-                    P[vkm_i].difference_update(joint_tuples)
-                    if len(P[vkm_i])==0:
-                        del P[vkm_i]
+                    delayed_removal.setdefault(vkm_i,set()).update(joint_tuples)
+                    delayed_removal.setdefault(vkm_j,set()).update(joint_tuples)
 
-                    P[vkm_j].difference_update(joint_tuples)
-                    if len(P[vkm_j])==0:
-                        del P[vkm_j]
+        for vkm_k in delayed_removal:
+            tuples_to_remove = delayed_removal[vkm_k]
+            pool[vkm_k].difference_update(tuples_to_remove)
+            if len(pool[vkm_k])==0:
+                del pool[vkm_k]
 
-                    return self.tupleset_iterator(P, check_attributes=check_attributes)
-        return {}
+        if len(next_stage_pool)>0:
+            pool.update(self.disjoint_itemsets(next_stage_pool))
+        return pool
 
     def schema_keyword_match_generator(self, Q, schema_index,**kwargs):
         ignored_tables = kwargs.get('ignored_tables',[])
@@ -102,29 +100,30 @@ class KeywordMatchHandler:
         threshold = kwargs.get('threshold',1)
         keyword_matches_to_ignore = kwargs.get('keyword_matches_to_ignore',set())
 
-        S = set()
+        S = []
         logger.debug("Processing schema matches")
         for keyword in Q:
             for table in schema_index:
                 if table in ignored_tables:
                     continue
 
-                for attribute in ['*']+list(schema_index[table].keys()):
+                for attribute in itertools.chain('*', schema_index[table].keys() ):
 
-                    if attribute=='id' or  (table,attribute) in ignored_attributes:
+                    if (
+                        attribute=='id' or
+                        (table,attribute) in ignored_attributes or
+                        #This line prevents redundant keyword matches
+                        attribute==table
+                        ):
                         continue
 
-                    attribute_variants = self.get_attribute_variants(attribute)
-                    for variant in attribute_variants:
-                        sim = self.similarities.word_similarity(keyword,table,variant)
-                        #logger.debug("similiary : {} threshold: {}".format(sim, threshold))
-                        if sim >= threshold:
-                            logger.info(f"found a KWmatch for {keyword} in {table}.{attribute} with score: {sim}")
-                            skm = KeywordMatch(table,schema_filter={attribute:{keyword}})
-                            #print(skm)
-                            if skm not in keyword_matches_to_ignore:
-                                S.add(skm)
-                            #print(S)
+                    sim = self.similarities.word_similarity(keyword,table,attribute)
+                    #logger.debug("similiary : {} threshold: {}".format(sim, threshold))
+                    if sim >= threshold:
+                        logger.info(f"found a KWmatch for {keyword} in {table}.{attribute} with score: {sim}")
+                        skm = KeywordMatch(table,schema_filter={attribute:{keyword}})
+                        if skm not in keyword_matches_to_ignore:
+                            S.append(skm)
         return S
 
     def filter_kwmatches_by_compound_keywords(self, vk_matches, compound_keywords):
@@ -132,6 +131,9 @@ class KeywordMatchHandler:
         Value-keyword matches which contains only part of a compound_keyword are
         pruned.
         '''
+        if len(compound_keywords)==0:
+            return vk_matches
+
         filtered_vk_matches = set()
         for value_keyword_match in vk_matches:
             must_remove = False
@@ -148,8 +150,3 @@ class KeywordMatchHandler:
                 filtered_vk_matches.add(value_keyword_match)
 
         return filtered_vk_matches
-
-
-    def get_attribute_variants(self, attribute):
-        pattern = re.compile('[_,-]')
-        return pattern.split(attribute)

@@ -5,4 +5,5 @@ from .graph import Graph
 from .memory import memory_size,memory_percent
 from .timestr import timestr
 from .tokenizer import Tokenizer
-from .next_path import next_path
+from .next_path import next_path,last_path
+from .tf_iaf import calculate_tf,calculate_iaf,calculate_inverse_frequency

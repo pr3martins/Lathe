@@ -10,71 +10,182 @@ class CandidateNetwork(Graph):
 
     def __init__(self, graph_dict=None, has_edge_info=False):
         self.score = None
+
+        self.__hashable = None
+        self.__hashcode = hash(None)
         self.__root = None
+        self.__level_by_alias = {}
 
         super().__init__(graph_dict,has_edge_info)
 
         if len(self)>0:
-            self.set_root()
-
-    def get_root(self):
-        return self.__root
-
-    def set_root(self,vertex=None):
-        if len(self) == 0:
-            return None
-
-        if vertex is not None:
-            keyword_match,alias = vertex
-            if not keyword_match.is_free():
-                self.__root = vertex
-                return vertex
-            else:
-                return None
-        else:         
-            for candidate in self.vertices():
-                keyword_match,alias = candidate
+            for vertex in self.vertices():
+                keyword_match,alias = vertex
                 if not keyword_match.is_free():
-                    self.__root = candidate
-                    return candidate
-        
-        print('The root of a Candidate Network cannot be a Keyword-Free Match.')
-        print(self)
-        raise ValueError('The root of a Candidate Network cannot be a Keyword-Free Match.')
-        
-        # return None
+                    self.__root = vertex
+                    self.__level_by_alias[alias]=0
 
-    def get_starting_vertex(self):
-        if len(self)==0:
-            return None
+            self.update_hashable()
 
-        if self.__root is None:
-            self.set_root()
-        return self.__root
-
-    # def get_starting_vertex(self):
-    #     vertex = None
-    #     for vertex in self.vertices():
-    #         keyword_match,alias = vertex
-    #         if not keyword_match.is_free():
-    #             break
-    #     return vertex
-
-        
     def add_vertex(self, vertex):
-        results = super().add_vertex(vertex)
         if self.__root is None:
-            self.set_root(vertex)
-        return results
+            keyword_match,alias = vertex
+
+            if keyword_match.is_free():
+                raise ValueError('The root of a Candidate Network cannot be a Keyword-Free Match.')
+            else:    
+                self.__root = vertex
+                self.__level_by_alias[alias]=0 
+
+        return super().add_vertex(vertex)
 
     def add_keyword_match(self, heyword_match, **kwargs):
+        
         alias = kwargs.get('alias', 't{}'.format(self.__len__()+1))
+        
         vertex = (heyword_match, alias)
-        return self.add_vertex(vertex)
+        
+        if self.__root is None:
+            self.__root = vertex
+            self.__level_by_alias[alias]=0            
+
+        return super().add_vertex(vertex)
 
     def add_adjacent_keyword_match(self,parent_vertex,keyword_match,edge_direction='>',**kwargs):
+
         child_vertex = self.add_keyword_match(keyword_match,**kwargs)
         self.add_edge(parent_vertex,child_vertex,edge_direction=edge_direction)
+
+        parent_km,parent_alias    = parent_vertex
+        keyword_match,alias = child_vertex
+        
+        self.__level_by_alias[alias] = self.__level_by_alias[parent_alias]+1
+
+        self.incremental_update_hashable(parent_vertex,child_vertex)
+
+    def incremental_update_hashable(self,parent_vertex,child_vertex):
+        parent_km,parent_alias    = parent_vertex
+        child_km,child_alias = child_vertex
+
+        child_level = self.__level_by_alias[child_alias]
+        
+        if len(self.__hashable)<child_level+1:
+            self.__hashable.append(set())
+
+        self.__hashable[child_level].add( (child_km,frozenset()) )
+
+        parent_level = self.__level_by_alias[parent_alias]
+
+        parent_neighbors = Counter(
+            keyword_match 
+            for keyword_match,alias in self.neighbours(parent_vertex)
+        )
+
+        old_parent_children = None
+        new_parent_children = None
+
+        # print(f'\n\n\nparent_vertex:')
+        # pp(parent_vertex)
+
+        # print(f'\nchild_vertex:')
+        # pp(child_vertex)
+
+        # print('\nHashable:')
+        # pp(self.__hashable)
+
+        # print(f'\nParent_neighbors:')
+        # pp(parent_neighbors)
+
+        for keyword_match,frozenset_children in self.__hashable[parent_level]:
+            if keyword_match != parent_km:
+                continue
+            # The parent neighbors are equivalent to the parent children plus:
+            # - one for the parent of the parent
+            # - one for the new child
+            children = Counter(dict(frozenset_children))
+            # print(f'\nChildren:')
+            # pp(children)
+
+            difference = sum( (parent_neighbors-children).values() )
+            if parent_vertex != self.__root:
+                difference-=1
+            
+            if difference==1:
+                old_parent_children = frozenset_children
+
+                children[child_km]+=1
+
+                # print(f'\nNew Children:')
+                # pp(children)
+                new_parent_children = frozenset(children.items())
+                break
+
+        self.__hashable[parent_level].remove( (parent_km,old_parent_children) )
+        self.__hashable[parent_level].add( (parent_km,new_parent_children) )
+
+        # print('\nHashable:')
+        # pp(self.__hashable)
+
+        self.__hashcode = hash(tuple(frozenset(items) for items in self.__hashable))
+            
+
+    def get_possible_root(self):
+        for vertex in self.vertices():
+            keyword_match,alias = vertex
+            if not keyword_match.is_free():
+                return vertex
+        raise ValueError('The root of a Candidate Network cannot be a Keyword-Free Match.')
+
+    def store_hashable(self):
+        if self.__root is None:
+            self.__root = get_possible_root()
+        
+        self.__hashable = []
+        self.__level_by_alias = {}
+
+        self.__hashcode = create_hashable(
+            self.__root,
+            hashable = self.__hashable,
+            level_by_alias = self.__level_by_alias,
+        )    
+
+    def create_hashable(self,root,**kwargs):
+        hashable = kwargs.get('hashable',[])
+        level_by_alias = kwargs.get('level_by_alias',{})
+        hashcode = kwargs.get()
+
+        level = 0       
+        visited = set()
+
+        queue = deque()
+        queue.append( (level,root) )
+
+        while queue:
+            level,vertex = queue.popleft()
+            keyword_match,alias = vertex
+
+            level_by_alias[alias]=level
+
+            children = Counter()
+            visited.add(alias)
+            
+            for adj_vertex in self.neighbours(vertex):
+                adj_km,adj_alias = adj_vertex
+
+                if adj_alias in visited:
+                    continue
+
+                queue.append( (level+1,adj_vertex) )
+                children[adj_km]+=1
+                
+            if len(hashable)<level+1:
+                hashable.append(set())
+            
+            hashable[level].add( (keyword_match,frozenset(children.items())) )
+
+        hashcode = hash(tuple(frozenset(items) for items in hashable))
+
+        return hashcode
 
     def keyword_matches(self):
         # return {keyword_match for keyword_match,alias in self.vertices()}
@@ -110,6 +221,14 @@ class CandidateNetwork(Graph):
 
         return True
 
+    def get_starting_vertex(self):
+        vertex = None
+        for vertex in self.vertices():
+            keyword_match,alias = vertex
+            if not keyword_match.is_free():
+                break
+        return vertex
+
     def remove_vertex(self,vertex):
         print('vertex:\n{}\n_Graph__graph_dict\n{}'.format(vertex,self._Graph__graph_dict))
         outgoing_neighbours,incoming_neighbours = self._Graph__graph_dict[vertex]
@@ -139,71 +258,26 @@ class CandidateNetwork(Graph):
         self.score = query_match.total_score/len(self)
 
     def __eq__(self, other):
-
         if not isinstance(other,CandidateNetwork):
             return False
         
-        self_root_km,self_root_alias  = self.__root
-        # if other.get_root() is None:
-        #     print(f'OTHER ROOT IS NONE')
-        #     print(other)
-        other_root_km,other_root_alias= other.get_root()
+        self_km,self_alias = self.__root
+        other_km,other_alias = other.__root
+
+        if self_km!=other_km:
+
+            common_root = None
+            if not self.__root[0].is_free():
+                common_root=self.__root
 
 
-        other_hash = None
+            print(f'a: {self.__root}\tb:{other.__root}')
+            raise SyntaxError
 
-        if self_root_km==other_root_km:
-            other_hash = hash(other)
-        else:            
-            for keyword_match,alias in other.vertices():
-                if self_root_km == keyword_match:
-                    root = (keyword_match,alias)
-                    # print(f'Root: {root}')
-                    other_hash = other.hash_from_root(root)
-        
-        if other_hash is None:
-            return False
-
-        # print(f'Equal:{hash(self)==other_hash}\nSelf:\n{self}\nOther:\n{other}\n\n\n')
-
-        return hash(self)==other_hash
+        return hash(self)==hash(other)
 
     def __hash__(self):
-        if len(self)==0:
-            return hash(None)
-        if self.__root is None:
-            self.set_root()
-        return self.hash_from_root(self.__root)   
-
-
-    def hash_from_root(self,root):
-        hashable = []
-
-        level = 0       
-        visited = set()
-
-        queue = deque()
-        queue.append( (level,root) )
-
-        while queue:
-            level,vertex = queue.popleft()
-            keyword_match,alias = vertex
-            children = Counter()
-            visited.add(alias)
-            
-            for adj_vertex in self.neighbours(vertex):
-                adj_km,adj_alias = adj_vertex
-                if adj_alias not in visited:
-                    queue.append( (level+1,adj_vertex) )
-                    children[adj_km]+=1
-                
-            if len(hashable)<level+1:
-                hashable.append(set())
-            
-            hashable[level].add( (keyword_match,frozenset(children.items())) )
-
-        hashcode = hash(tuple(frozenset(items) for items in hashable))
-        return hashcode   
+        return self.__hashcode       
 
     def __repr__(self):
         if len(self)==0:
@@ -238,6 +312,9 @@ class CandidateNetwork(Graph):
             vertex1 = (alias_hash[alias1],alias1)
             vertex2 = (alias_hash[alias2],alias2)
             candidate_network.add_edge(vertex1,vertex2)
+        
+        #important phase
+        candidate_network.update_hashable()
 
         return candidate_network
 

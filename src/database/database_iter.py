@@ -92,10 +92,7 @@ class DatabaseIter:
                             for col in range(1,len(row)):
                                 column = cur.description[col][0]
                                 text = str(row[col])
-                                if self.tokenizer.is_url(text):
-                                    tokens = [text]
-                                else:
-                                    tokens = self.tokenizer.tokenize(text)
+                                tokens = self.tokenizer.tokenize(text)
 
                                 for word in tokens:
                                     #print(tokens)

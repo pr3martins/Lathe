@@ -1,6 +1,5 @@
 import shelve
-import gc
-import math
+from copy import deepcopy
 
 from utils import get_logger
 
@@ -20,6 +19,12 @@ class SchemaIndex():
     def __setitem__(self,key,value):
         self._dict[key] = value
 
+    def __repr__(self):
+        return repr(self._dict)
+
+    def __str__(self):
+        return str(self._dict)
+
     def keys(self):
         yield from self.__iter__()
 
@@ -31,9 +36,11 @@ class SchemaIndex():
         for key in self:
             yield self[key]
 
-    def create_entries(self,table_attributes):
-        for (table,attribute) in table_attributes:
-            self._dict.setdefault(table,{}).setdefault(attribute,{'max_frequency':0, 'norm':0.0})
+    def create_entries(self,table_attributes,metrics):
+        for table,attributes in table_attributes:
+            self._dict.setdefault(table,{})
+            for attribute in attributes:
+                self._dict[table].setdefault(attribute, deepcopy(metrics) )
 
     def tables_attributes(self):
         return {(table,attribute) for table in self for attribute in self[table]}

@@ -104,7 +104,8 @@ class KeywordMatch:
         return all_equal_attributes
 
     def __hash__(self):
-        return hash( (self.table,frozenset(self.keywords(schema_only=True)),self.value_filter) )
+        # return hash( (self.table,frozenset(self.keywords(schema_only=True)),self.value_filter) )
+        return hash( (self.table,self.schema_filter,self.value_filter) )
 
     def to_json_serializable(self):
 

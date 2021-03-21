@@ -1,8 +1,13 @@
 *.pyc
 venv3
 venv
+.env
 .vscode
 **/__pycache__
-data
+datasets
 config
-meeting_notes
+querysets
+plots
+results
+*.zip
+

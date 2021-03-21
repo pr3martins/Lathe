@@ -1,10 +1,10 @@
 import psycopg2
+from prettytable import PrettyTable
+from itertools import groupby
 
 from utils import ConfigHandler,get_logger
 
 from .database_iter import DatabaseIter
-
-
 
 logger = get_logger(__name__)
 
@@ -26,7 +26,11 @@ class DatabaseHandler:
                         ORDER by 1,2;
                         '''
                 cur.execute(sql)
-                return cur.fetchall()
+        tables_attributes = {
+            table:[attribute for table,attribute in group]
+            for table,group in groupby(cur.fetchall(),lambda x:x[0])
+        }
+        return tables_attributes        
 
     def iterate_over_keywords(self,schema_index,**kwargs):
         database_table_columns=schema_index.tables_attributes()
@@ -62,22 +66,35 @@ class DatabaseHandler:
 
                 return fk_constraints
 
-    def exec_sql (conn_string,SQL,**kwargs):
+    def exec_sql (self,sql,**kwargs):
         show_results=kwargs.get('show_results',True)
 
         with psycopg2.connect(self.conn_string) as conn:
             with conn.cursor() as cur:
                 try:
-                    cur.execute(SQL)
+                    cur.execute(sql)
 
                     if cur.description:
-                        table = PrettyTable()
-                        table.field_names = [ '{}{}'.format(i,col[0]) for i,col in enumerate(cur.description)]
+                        table = PrettyTable(max_table_width=200)
+                        table.field_names = [ f'{i}.{col[0]}' for i,col in enumerate(cur.description)]
                         for row in cur.fetchall():
                             table.add_row(row)
                     if show_results:
                         print(table)
                 except:
-                    print('ERRO SQL:\n',SQL)
+                    print('ERRO SQL:\n',sql)
                     raise
                 return cur.rowcount>0
+
+    def exist_results(self,sql):
+        sql = f"SELECT EXISTS ({sql.rstrip(';')});"
+
+        with psycopg2.connect(self.conn_string) as conn:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute(sql)
+                    return cur.fetchone()[0]
+                except:
+                    print('ERRO SQL:\n',sql)
+                    return False
+        return None

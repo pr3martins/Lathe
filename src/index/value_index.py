@@ -1,8 +1,7 @@
 import shelve
-from math import log1p, sqrt
 from random import sample
 
-from utils import get_logger
+from utils import get_logger,calculate_tf,calculate_iaf,calculate_inverse_frequency
 
 from .babel_hash import BabelHash
 
@@ -12,6 +11,7 @@ class ValueIndex():
     def __init__(self,**kwargs):
         self._dict = {}
         self.persistant_filename = kwargs.get('persistant_filename',None)
+        self.update_cache = kwargs.get('update_cache',True)
 
     def __contains__(self, keyword):
         if keyword in self._dict:
@@ -33,19 +33,17 @@ class ValueIndex():
             item = self._dict[keyword]
         elif self.persistant_filename:
             with shelve.open(self.persistant_filename,flag='r') as storage:
-                item = storage[keyword]
-                self._set_underlying_item(keyword,item)
+                item = storage.get(keyword,None)
+                if self.update_cache:
+                    self._set_underlying_item(keyword,item)
         if item is None:
-            raise KeyError('The keyword {keyword} is not in the ValueIndex.')
+            item = (0, BabelHash())
+            # raise KeyError('The keyword {keyword} is not in the ValueIndex.')
         return item
 
     def __getitem__(self,keyword):
-        iaf, value = self._get_underlying_item(keyword)
+        inverse_frequency, value = self._get_underlying_item(keyword)
         return value
-
-    def get_iaf(self,keyword):
-        iaf, value = self._get_underlying_item(keyword)
-        return iaf
 
     def __setitem__(self,keyword,value):
         raise Exception('Invalid operation. ValueIndex items shoud be set using the add_mapping method.')
@@ -70,21 +68,31 @@ class ValueIndex():
         self[keyword].setdefault(table , BabelHash() )
         self[keyword][table].setdefault( attribute , [] ).append(ctid)
 
-    def set_iaf(self,keyword,iaf):
+    def get_inverse_frequency(self,keyword):
+        inverse_frequency, value = self._get_underlying_item(keyword)
+        return inverse_frequency
+
+    def set_inverse_frequency(self,keyword,inverse_frequency):
         # This method does not change the persistant_filename
-        old_iaf,old_value = self._dict[keyword]
-        self._dict[keyword]= (iaf,old_value)
+        old_inverse_frequency,old_value = self._dict[keyword]
+        self._dict[keyword]= (inverse_frequency,old_value)
 
     def get_frequency(self,keyword,table,attribute):
         return len(self[keyword][table][attribute])
 
-    def frequencies_iafs(self):
+    def frequencies(self):
         for word in self:
-            iaf = self.get_iaf(word)
+            inverse_frequency = self.get_inverse_frequency(word)
             for table in self[word]:
                 for attribute, ctids in self[word][table].items():
                     frequency = len(ctids)
-                    yield table,attribute,frequency,iaf
+                    yield table,attribute,frequency,inverse_frequency
+
+    def get_iaf(self,weight_scheme,keyword):
+        return calculate_iaf(weight_scheme, inverse_frequency = self.get_inverse_frequency(keyword))
+    
+    def get_tf(self,weight_scheme,keyword,table,attribute,max_frequency=None):
+        return calculate_tf(weight_scheme,self.get_frequency(keyword,table,attribute), max_frequency = max_frequency)
 
     def __repr__(self):
         return f'<ValueIndex {repr(self._dict)}>'
@@ -127,5 +135,6 @@ class ValueIndex():
                 try:
                     self._set_underlying_item(keyword,storage[keyword])
                 except KeyError:
+                    self._set_underlying_item(keyword,None)
                     print(f'Keyword {keyword} not present in persistant_filename')
                     continue

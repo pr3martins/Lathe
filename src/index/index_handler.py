@@ -4,9 +4,9 @@ import shelve
 from contextlib import ExitStack
 import json
 from pprint import pprint as pp
-from math import log1p, pow, sqrt
+from math import log
 
-from utils import ConfigHandler,get_logger,memory_size
+from utils import ConfigHandler,get_logger,memory_size,calculate_tf,calculate_inverse_frequency,calculate_iaf
 from database import DatabaseHandler
 
 from .value_index import ValueIndex
@@ -17,11 +17,11 @@ import sys
 logger = get_logger(__name__)
 
 class IndexHandler:
-    def __init__(self):
-        self.config = ConfigHandler()
+    def __init__(self, **kwargs):
+        self.config = kwargs.get('config',ConfigHandler())
         self.value_index = ValueIndex()
         self.schema_index = SchemaIndex()
-        self.database_handler = DatabaseHandler()
+        self.database_handler = kwargs.get('database_handler',DatabaseHandler())
         self.partial_index_count=0
 
     def create_indexes(self):
@@ -31,24 +31,21 @@ class IndexHandler:
         self.process_norms()
 
     def create_partial_schema_index(self):
-        print(f'self.config.relations_file {self.config.relations_file}')
         tables_attributes = None
 
-        if self.config.relations_file is not None:
-            print('Get table_attributes from relations_file')
-            with open(self.config.relations_file,'r') as relations_file:
-                tables_attributes = [(table_entry['name'],attribute_entry['name'])
-                                     for table_entry in json.load(relations_file)
-                                     for attribute_entry in table_entry['attributes']
-                                     if attribute_entry['type'] !='fk' and
-                                     table_entry[ 'type'] != 'relationship'
+        if self.config.attributes_file is not None:
+            print('Get table_attributes from attributes_file')
+            with open(self.config.attributes_file,'r') as attributes_file:
+                tables_attributes = [
+                    (item['table'],item['attributes'])
+                    for item in json.load(attributes_file) 
                 ]
-        # else:
+        else:
             print('Get table_attributes from database')
             tables_attributes = self.database_handler.get_tables_and_attributes()
 
-
-        self.schema_index.create_entries(tables_attributes)
+        metrics = {'max_frequency':0, 'norm':[0,0,0,0]}
+        self.schema_index.create_entries(tables_attributes,metrics)
         print(f'num attr: {self.schema_index.get_num_total_attributes()}')
         print(f'ATTRIBUTES:')
         pp(self.schema_index.tables_attributes())
@@ -67,6 +64,7 @@ class IndexHandler:
         def part_index():
             self.partial_index_count+=1
             partial_index_filename = f'{self.config.value_index_filename}.part{self.partial_index_count:02d}'
+            print(partial_index_filename)
             logger.info(f'Storing value_index.part{self.partial_index_count} in {partial_index_filename}')
             self.value_index.persist_to_shelve(partial_index_filename)
             self.value_index = ValueIndex()
@@ -122,14 +120,14 @@ class IndexHandler:
 
                     merged_babel_hash = BabelHash()
                     if len(value_list)>1:
-                        for ( part_iaf ,part_babel_hash) in value_list:
+                        for ( _ ,part_babel_hash) in value_list:
                             for table in part_babel_hash:
                                 merged_babel_hash.setdefault(table,BabelHash())
                                 for attribute in part_babel_hash[table]:
                                     merged_babel_hash[table].setdefault( attribute , [] )
                                     merged_babel_hash[table][attribute]+= part_babel_hash[table][attribute]
                     else:
-                        _,merged_babel_hash = value_list[0]
+                        _ ,merged_babel_hash = value_list[0]
 
                     for table in merged_babel_hash:
                         for attribute in merged_babel_hash[table]:
@@ -140,8 +138,9 @@ class IndexHandler:
 
 
                     num_attributes_with_this_word = sum([len(merged_babel_hash[table]) for table in merged_babel_hash])
-                    merged_iaf = log1p(num_total_attributes/num_attributes_with_this_word)
-                    merged_value = (merged_iaf,merged_babel_hash)
+
+                    inverse_frequency = calculate_inverse_frequency(num_total_attributes,num_attributes_with_this_word)
+                    merged_value = (inverse_frequency,merged_babel_hash)
                     final_value_index[word]=merged_value
 
     def process_norms(self):
@@ -150,15 +149,21 @@ class IndexHandler:
                 if word == '__babel__':
                     continue
 
-                iaf, babel_hash = full_index[word]
+                inverse_frequency, babel_hash = full_index[word]
                 for table in babel_hash:
                     for attribute in babel_hash[table]:
                         frequency = len(babel_hash[table][attribute])
-                        self.schema_index[table][attribute]['norm'] += pow(iaf*frequency,2)
+                        max_frequency = self.schema_index[table][attribute]['max_frequency']
+                        
+                        for weight_scheme in range(4):
+                            tf  = calculate_tf(weight_scheme,frequency,max_frequency)
+                            iaf = calculate_iaf(weight_scheme,inverse_frequency)
+                            self.schema_index[table][attribute]['norm'][weight_scheme] += (tf*iaf)**2
 
         for table in self.schema_index:
             for attribute in self.schema_index[table]:
-                self.schema_index[table][attribute]['norm'] = sqrt(self.schema_index[table][attribute]['norm'])
+                for weight_scheme in range(4):
+                    self.schema_index[table][attribute]['norm'][weight_scheme] **= 0.5
 
         self.schema_index.persist_to_shelve(self.config.schema_index_filename)
 

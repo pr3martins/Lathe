@@ -1,5 +1,6 @@
 import re
-import string
+from string import punctuation,ascii_uppercase,ascii_lowercase
+
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
@@ -9,19 +10,14 @@ from utils import get_logger
 
 logger = get_logger(__name__)
 class Tokenizer:
-
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(stopwords.words('english'))-{'will'}
+    re_spaces = re.compile('\s+')
+    translate_table = str.maketrans(ascii_uppercase+punctuation,ascii_lowercase+' '*len(punctuation))
+    del translate_table[ord('_')]
 
     def __init__(self, **kwargs):
         self.tokenize_method = kwargs.get('tokenize_method','simple')
-
-        self.tokenizer = re.compile("\\W+|_")
-        self.url_match = re.compile("^(https?://)?\\w+\.[\\w+\./\~\?\&]+$")
         self.config = ConfigHandler()
-
-
-    def is_url(self,text):
-        return self.url_match.search(text) is not None
 
     def compound_keywords(self,keyword_query):
         return [self.tokenize(segment) for segment in keyword_query.split('"')[1::2]]
@@ -36,17 +32,7 @@ class Tokenizer:
             return keywords
 
         if self.tokenize_method == 'simple':
-            return [keyword.strip(string.punctuation)
-                    for keyword in re.split('[\s\']', text.lower())
-                    if keyword not in Tokenizer.stop_words]
-
-        # TODO verificar referencial teorico
-        # double tokenization
-        tokenized = [word_part for word in text.lower().split()
-        for word_part in self.tokenizer.split(word.strip(string.punctuation))
-        if word_part not in self.stop_words]
-        double_tokenized = [ch_token for token in tokenized
-        for ch_token in self.tokenizer.split(token)
-        if ch_token not in self.stop_words]
-
-        return [token for token in double_tokenized if token != '']
+            return [keyword
+                    for keyword in re.split(self.re_spaces, text.translate(self.translate_table))
+                    if keyword not in Tokenizer.stop_words
+                    and len(keyword)>1]

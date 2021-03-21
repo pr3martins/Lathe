@@ -10,70 +10,37 @@ debug_mapping = { \
 	'CRITICAL': logging.CRITICAL \
 }
 
-
-'''
-    Class responsible to hold and managing the configuration:
-
-    General Configuration Attributes:
-        - connection
-            - host
-            - password
-            - user
-        - logging_level
-        - database_config
-        - parameter_values
-             - <class>.<function> : { arg1 : value }
-
-    Specific Configuration Attributes:
-        - remove_from_index : [table.column]
-        - database_name
-        - schema_index_file
-        - value_index_file
-        - edges_file
-        - evaluation
-            - query_gt_file
-            - parameter_values
-'''
 class ConfigHandler:
     __instance = None
-    def __init__(self, database='', reset=False):
-
+    def __init__(self,reset=False,**kwargs):
         if ConfigHandler.__instance is None or reset:
-            #reading general config
-            config_partial_path = os.path.abspath(__file__).split('/')[:-3] + ['config']
-            config_path = '/'.join(config_partial_path + ['config.json'])
-            config_file = open(config_path, 'r')
-            ConfigHandler.__instance = json.load(config_file)
-            ConfigHandler.__instance.setdefault('table_file', None)
+            general_config_file = kwargs.get('general_config_file','../../config/config.json')            
+            config = self.load_config(general_config_file)     
 
-            #getting the specific dataset configuration
-            dataset_config = database if database != '' else ConfigHandler.__instance['database_config']
-            dataset_config_path = '/'.join(config_partial_path \
-                + ['{}_config.json'.format(dataset_config.lower())])
+            config['logging_mode'] = debug_mapping[config['logging_mode']]       
 
-            config_specific_file = json.load(open(dataset_config_path, 'r'))
+            if 'queryset_config_file' in kwargs:
+                config['queryset_config_file'] = kwargs['queryset_config_file']
+            queryset_config = self.load_config(config['queryset_config_file'])
 
-            ConfigHandler.__instance['connection']['database'] = config_specific_file['database']
-            del config_specific_file['database']
+            if 'dataset_config_file' in kwargs:
+                queryset_config['dataset_config_file']= kwargs['dataset_config_file']
+            dataset_config = self.load_config(queryset_config['dataset_config_file'])
 
-            ConfigHandler.__instance.update(config_specific_file)
-            ConfigHandler.__instance['logging_mode'] = \
-                debug_mapping[ConfigHandler.__instance['logging_mode']]
-            
+            config['connection']['database'] = dataset_config['database']
+            del dataset_config['database']
+
+            ConfigHandler.__instance = config
+            ConfigHandler.__instance.update(queryset_config)
+            ConfigHandler.__instance.update(dataset_config)
 
         self.__dict__ = ConfigHandler.__instance
 
-    def dump(self):
-        config_partial_path = os.path.abspath(__file__).split('/')[:-3] + ['config']
-        dataset_config_path = '/'.join(config_partial_path \
-            + ['{}_config.json'.format(self.database_config.lower())])
-
-        config_specific_file = json.load(open(dataset_config_path, 'r'))
-
-        config_specific_file['attribute_count'] = self.attribute_count
-        config_specific_file['max_ctids_count'] = self.max_ctids_count
-        config_specific_file['register_size'] = self.register_size
-
-        with open(dataset_config_path, 'w') as f:
-            json.dump(config_specific_file, f, indent=4)
-
+    def load_config(self,filename):
+        config_file = open(filename, 'r')
+        config = json.load(config_file)
+        return config
+    
+    def set_logging_level(self,ĺevel):
+        self.logging_mode = debug_mapping[ĺevel]
+        ConfigHandler.__instance['logging_mode']=self.logging_mode

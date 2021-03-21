@@ -174,10 +174,15 @@ class QueryMatchHandler:
 
         return merged_qm
 
-    def rank_query_matches(self,query_matches, value_index, schema_index, similarity, log_score=False):
+    def rank_query_matches(self,query_matches, value_index, schema_index, similarity,weight_scheme):
         for query_match in query_matches:
             logger.debug("query match: {}".format(query_match))
-            query_match.calculate_total_score(value_index,schema_index, similarity, log_score)
+            query_match.calculate_total_score(
+                value_index,
+                schema_index,
+                similarity,
+                weight_scheme,
+            )
 
         ranked_query_matches = sorted(query_matches,key=lambda query_match: query_match.total_score,reverse=True)
     
