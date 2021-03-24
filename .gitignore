@@ -1,0 +1,16 @@
+*.pyc
+venv3
+venv
+.env
+.vscode
+**/__pycache__
+datasets
+config
+querysets
+plots
+results
+*.zip
+*.egg-info
+coffman_original_golden_standards
+*.ipynb
+**/.ipynb_checkpoints
