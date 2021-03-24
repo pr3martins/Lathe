@@ -10,4 +10,7 @@ querysets
 plots
 results
 *.zip
-
+*.egg-info
+coffman_original_golden_standards
+*.ipynb
+**/.ipynb_checkpoints
