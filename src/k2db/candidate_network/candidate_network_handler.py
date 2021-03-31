@@ -14,19 +14,18 @@ class CandidateNetworkHandler:
         self.database_handler = kwargs.get('database_handler',DatabaseHandler())
 
 
-    def generate_cns(self,schema_index,schema_graph,ranked_query_matches,weight_scheme,**kwargs):
+    def generate_cns(self,schema_index,schema_graph,ranked_query_matches,keywords,weight_scheme,**kwargs):
         topk_cns = kwargs.get('topk_cns',20)
         pospruning = kwargs.get('pospruning',False)
 
         returned_cns=[]
-
         num_cns_available = topk_cns
 
         for query_match in ranked_query_matches:
             if topk_cns!=-1 and num_cns_available<=0:
                 break
 
-            cns_per_cur_qm = self.generate_cns_per_qm(schema_index,schema_graph,query_match,weight_scheme,**kwargs)
+            cns_per_cur_qm = self.generate_cns_per_qm(schema_index,schema_graph,query_match,keywords,weight_scheme,**kwargs)
 
             for candidate_network in cns_per_cur_qm:
                 if num_cns_available<=0:
@@ -36,24 +35,45 @@ class CandidateNetworkHandler:
                     returned_cns.append(candidate_network)
 
                 num_cns_available -=1
+        ranked_cns=sorted(
+            returned_cns,
+            key=lambda candidate_network: candidate_network.score,
+            reverse=True
+        )
 
-        ranked_cns=sorted(returned_cns,key=lambda candidate_network: candidate_network.score,reverse=True)
-
-        return ranked_cns
-
-    def parallelized_generate_cns(self, spark_context, schema_index, schema_graph,ranked_query_matches,weight_scheme, **kwargs):
-        topk_cns = kwargs.get('topk_cns',20)
-        pospruning = kwargs.get('pospruning',False)
-
-        qms_rdd = spark_context.parallelize(ranked_query_matches)
-        cns_rdd = qms_rdd.flatMap(lambda query_match: self.generate_cns_per_qm(schema_index,schema_graph,query_match,weight_scheme,**kwargs))
-        if pospruning:
-            cns_rdd = cns_rdd.filter(lambda candidate_network: self.is_cn_empty(schema_graph,candidate_network))
-        ranked_cns = cns_rdd.takeOrdered(topk_cns, lambda candidate_network: -candidate_network.score)
 
         return ranked_cns
 
-    def generate_cns_per_qm(self,schema_index,schema_graph,query_match,weight_scheme,**kwargs):
+
+    # def parallelized_generate_cns(self, spark_context, schema_index, schema_graph,ranked_query_matches,keywords,weight_scheme, **kwargs):
+    #     topk_cns = kwargs.get('topk_cns',20)
+    #     pospruning = kwargs.get('pospruning',False)
+
+    #     qms_rdd = spark_context.parallelize(ranked_query_matches)
+    #     cns_rdd = qms_rdd.flatMap(lambda query_match: self.generate_cns_per_qm(schema_index,schema_graph,query_match,keywords,weight_scheme,**kwargs))
+    #     if pospruning:
+    #         cns_rdd = cns_rdd.filter(lambda candidate_network: not self.is_cn_empty(schema_graph,candidate_network))
+
+    #     #To preserve the order of QMs, we sort the CNs using the score of QMs as well
+    #     if topk_cns!= -1:
+    #         ranked_cns = cns_rdd.takeOrdered(
+    #             topk_cns,
+    #             lambda candidate_network: (
+    #                 -candidate_network.get_qm_score(),
+    #                 -candidate_network.score
+    #             )
+    #         )
+    #     else:
+    #         ranked_cns = cns_rdd.sortBy(                
+    #             lambda candidate_network: (
+    #                 -candidate_network.get_qm_score(),
+    #                 -candidate_network.score
+    #             )
+    #         ).collect()
+
+    #     return ranked_cns
+
+    def generate_cns_per_qm(self,schema_index,schema_graph,query_match,keywords,weight_scheme,**kwargs):
         max_cn_size = kwargs.get('max_cn_size',5)
         topk_cns_per_qm = kwargs.get('topk_cns_per_qm',1)
 
@@ -63,7 +83,7 @@ class CandidateNetworkHandler:
         schema_prunning = kwargs.get('schema_prunning',True)
         desired_cn = kwargs.get('desired_cn',None)
 
-        returned_cns = set()
+        returned_cns = []
         pruned_cns = set()
 
         def meet_pruning_conditions(jnkm):
@@ -89,16 +109,16 @@ class CandidateNetworkHandler:
 
         # JNKM stands for Joining Network of Keyword Matches
         cur_jnkm = CandidateNetwork()
-        cur_jnkm.add_keyword_match(query_match.get_random_keyword_match())
+        cur_jnkm.add_keyword_match(query_match.get_km_from_keyword(keywords[0]))
 
         if len(query_match)==1:
             cur_jnkm.calculate_score(query_match)
-            returned_cns.add(cur_jnkm)
+            returned_cns.append(cur_jnkm)
             return returned_cns
 
         table_hash={}
         for keyword_match in query_match:
-            table_hash.setdefault(keyword_match.table,set()).add(keyword_match)
+            table_hash.setdefault(keyword_match.table,{KeywordMatch(keyword_match.table)}).add(keyword_match)
 
         F = deque()
         F.append(cur_jnkm)
@@ -109,19 +129,14 @@ class CandidateNetworkHandler:
             for vertex_u in reversed(cur_jnkm.vertices()):
                 keyword_match,_ = vertex_u
 
-                # sorted_directed_neighbors = schema_graph.directed_neighbors(keyword_match.table)
-
                 sorted_directed_neighbors = sorted(
                     schema_graph.directed_neighbors(keyword_match.table),
-                    reverse=True,
                     key=directed_neighbor_sorting_function
                     )
 
                 for direction,adj_table in sorted_directed_neighbors:
 
-                    table_hash.setdefault(adj_table,set())
-                    keyword_free_match = KeywordMatch(adj_table)
-                    table_hash[adj_table].add(keyword_free_match)
+                    table_hash.setdefault(adj_table,{KeywordMatch(adj_table)})
 
                     for adj_keyword_match in table_hash[adj_table]:
 
@@ -163,10 +178,14 @@ class CandidateNetworkHandler:
 
         def sum_norm_attributes(directed_neighbor):
             _,adj_table = directed_neighbor
-            if adj_table not in schema_index:
-                return 0
-            return sum(schema_index[adj_table][attribute]['norm'][weight_scheme]
-                        for attribute in schema_index[adj_table])
+            score1 = 0 
+            if adj_table in schema_index:
+                score1 = sum(
+                    schema_index[adj_table][attribute]['norm'][weight_scheme]
+                    for attribute in schema_index[adj_table]
+                )
+            score2 = adj_table
+            return (-score1,score2)
 
         return sum_norm_attributes
     

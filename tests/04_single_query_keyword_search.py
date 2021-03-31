@@ -1,6 +1,8 @@
 from k2db.mapper import Mapper
 from k2db.utils import ConfigHandler, truncate
 from k2db.evaluation import EvaluationHandler
+from k2db.query_match import QueryMatch
+from k2db.candidate_network import CandidateNetwork
 
 config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
@@ -10,7 +12,7 @@ print('Choose a queryset from the list:\n')
 for i,(name,path) in enumerate(queryset_configs):
     print(f'{i+1:02d} - {truncate(name)}')    
 ans = int(input())
-# ans = 1
+# ans = 3
 
 _ , queryset_config_filepath = queryset_configs[ans-1]
 config = ConfigHandler(reset=True,queryset_config_filepath=queryset_config_filepath)
@@ -24,12 +26,31 @@ for i,item in enumerate(mapper.queryset):
     print(f'{i+1:02d} - {truncate(keyword_query)}')
 
 ans = int(input())
-ans = 49
+# ans = 45
+
+pospruning = False
+prepruning = True
+parallel_cn = False
+topk_cns = 20
+assume_golden_qms=False
+desired_cn = False
+topk_cns_per_qm = 2
+max_num_query_matches = 5
 
 keyword_query = mapper.queryset[ans-1]['keyword_query']
 
+if parallel_cn:
+    mapper.load_spark()
+
 results_for_query = mapper.keyword_search(
-    keyword_query
+    keyword_query,
+    pospruning=pospruning,
+    parallel_cn =parallel_cn,
+    topk_cns=topk_cns,
+    assume_golden_qms=assume_golden_qms,
+    desired_cn = desired_cn,
+    topk_cns_per_qm = topk_cns_per_qm,
+    max_num_query_matches=max_num_query_matches,
 )
 
 results = {
@@ -41,6 +62,18 @@ results = {
 
 evaluation_handler = EvaluationHandler()
 evaluation_handler.load_golden_standards()
-evaluated_results = evaluation_handler.evaluate_results(results)
+evaluated_results = evaluation_handler.evaluate_results(
+    results,
+    results_filename=f'{config.results_directory}single_query_keyword_search.json'
+)
 
-print(evaluated_results['evaluation'])
+# print(evaluated_results['evaluation'])
+
+query_matches = [QueryMatch.from_json_serializable(json_serializable_qm)
+                                 for json_serializable_qm in results_for_query['query_matches']]
+
+candidate_networks = [CandidateNetwork.from_json_serializable(json_serializable_cn)
+                                 for json_serializable_cn in results_for_query['candidate_networks']]
+
+for i,candidate_network in enumerate(candidate_networks):
+    print(f'{i+1} CN:\n{candidate_network}')   

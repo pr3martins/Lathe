@@ -1,34 +1,27 @@
-from pathlib import Path
-
 from k2db.utils import ConfigHandler
 from k2db.mapper import Mapper
 from k2db.evaluation import EvaluationHandler
 
+approaches = ['prepruning']
 
-approaches = ['standard','pospruning','prepruning']
-# approaches = ['pospruning','prepruning']
 
 config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
 queryset_configs.sort()
 
-instance_based_approaches_parallel_cn = False
-output_results_subfolder = 'assume_golden_qms/'
-
 spark_context = None
+assume_golden_qms = False
+input_desired_cn = False
+topk_cns_per_qm_list = [1]
+output_results_subfolder = '1cns_per_qm/'
+# weight_scheme=3
+max_num_query_matches = 5
 
 repeat = 1 
 parallel_cn = False
-assume_golden_qms=True
-topk_cns_per_qm = 20
-input_desired_cn=True
 
-for weight_scheme in range(4):
-    output_results_subfolder = f'assume_golden_qms/ws{weight_scheme}/'
-    Path(f'{config.results_directory}{output_results_subfolder}').mkdir(parents=True, exist_ok=True)
-
+for topk_cns_per_qm in topk_cns_per_qm_list:
     for approach in approaches:
-        
         prepruning = (approach == 'prepruning')
         pospruning = (approach == 'pospruning')
         # if approach == 'standard':
@@ -37,7 +30,8 @@ for weight_scheme in range(4):
         # else:
         #     repeat = 1 
         #     parallel_cn = instance_based_approaches_parallel_cn
-
+        
+        
         for qsconfig_name,qsconfig_filepath in queryset_configs:
 
             config = ConfigHandler(reset = True,queryset_config_filepath=qsconfig_filepath)
@@ -60,11 +54,12 @@ for weight_scheme in range(4):
                 repeat = repeat,
                 prepruning=prepruning,
                 pospruning=pospruning,
-                weight_scheme=weight_scheme,
                 assume_golden_qms = assume_golden_qms,
                 topk_cns_per_qm = topk_cns_per_qm,
                 input_desired_cn = input_desired_cn,
+                max_num_query_matches=max_num_query_matches,
                 )
+
             
             print(f'Saving results in {results_filepath}')
             evaluation_handler.evaluate_results(results,results_filename=results_filepath)

@@ -41,7 +41,7 @@ class Mapper:
             self.num_workers = num_workers
             spark_conf = SparkConf().setAppName('K2D').setMaster(f'local[{self.num_workers}]')
             spark_context = SparkContext(conf=spark_conf)
-            self.spark_context = spark_context   
+            self.spark_context = spark_context
 
     def stop_spark(self):
         self.spark_context.stop()
@@ -78,7 +78,7 @@ class Mapper:
             "queryset":self.config.queryset_filepath,
             "results":results,
         }
-        
+
         if export_results:
             if results_filename is None:
                 results_filename = next_path(f'{self.config.results_directory}{self.config.queryset_name}-{approach}-%03d.json')
@@ -94,14 +94,14 @@ class Mapper:
         parallel_cn = kwargs.get('parallel_cn', False)
         repeat = kwargs.get('repeat',1)
         assume_golden_qms = kwargs.get('assume_golden_qms',False)
-        max_num_query_matches = kwargs.get('max_num_query_matches',10)
+        max_num_query_matches = kwargs.get('max_num_query_matches',5)
         input_desired_cn = kwargs.get('input_desired_cn',False)
 
         weight_scheme = kwargs.get('weight_scheme',3)
         #preventing to send multiple values for weight_scheme
         if 'weight_scheme' in kwargs:
             del kwargs['weight_scheme']
-        
+
         elapsed_time = {
             'km':[],
             'skm':[],
@@ -110,9 +110,7 @@ class Mapper:
             'cn':[],
             'total':[],
         }
-        keywords =  set(self.tokenizer.keywords(keyword_query))
-        # compound_keywords =  set(self.tokenizer.compound_keywords(keyword_query))
-        # printf(f'Compound Keywords: {compound_keywords}')
+        keywords =  self.tokenizer.keywords(keyword_query)
 
         for _ in range(repeat):
             if not assume_golden_qms:
@@ -143,7 +141,7 @@ class Mapper:
                 weight_scheme,
             )
 
-            ranked_query_matches = ranked_query_matches[:max_num_query_matches] 
+            ranked_query_matches = ranked_query_matches[:max_num_query_matches]
             logger.info('%d QMs generated: %s',len(ranked_query_matches),ranked_query_matches)
 
             start_cn_time = timer()
@@ -160,8 +158,9 @@ class Mapper:
                     self.index_handler.schema_index,
                     self.index_handler.schema_graph,
                     ranked_query_matches,
+                    keywords,
                     weight_scheme,
-                     **kwargs,                    
+                     **kwargs,
                 )
             else:
                 ranked_cns = self.candidate_network_handler.parallelized_generate_cns(
@@ -169,11 +168,12 @@ class Mapper:
                     self.index_handler.schema_index,
                     self.index_handler.schema_graph,
                     ranked_query_matches,
+                    keywords,
                     weight_scheme,
                     **kwargs,
                 )
 
-            logger.info('%d CNs generated: %s',len(ranked_cns),ranked_cns)
+            logger.info('%d CNs generated: %s',len(ranked_cns),[(cn.score,cn)for cn in ranked_cns])
             end_cn_time = timer()
 
             elapsed_time['km'].append(   start_qm_time -start_skm_time)

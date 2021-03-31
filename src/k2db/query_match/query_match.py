@@ -20,9 +20,15 @@ class QueryMatch:
         # self.total_score = 1.0
         # self.tables_on_match = set()
 
+    def get_km_from_keyword(self,keyword):
+        #This is still somewhat random
+        for keyword_match in self.keyword_matches:
+            if keyword in keyword_match.keywords():
+                return keyword_match
+        return None
+
     def get_random_keyword_match(self):
         return sample(self.keyword_matches,k=1)[0]
-
 
     def calculate_total_score(self, value_index, schema_index, similarity, weight_scheme):
         self.total_score = 1

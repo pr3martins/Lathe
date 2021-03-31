@@ -23,7 +23,6 @@ def get_filename_num(path_pattern):
     i = 1
 
     # First do an exponential search
-    print('pattern ',path_pattern%i)
     while exists(path_pattern % i):
         i = i * 2
 

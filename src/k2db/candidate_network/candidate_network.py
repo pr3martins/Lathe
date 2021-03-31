@@ -170,6 +170,9 @@ class CandidateNetwork(Graph):
         # self.score = query_match.total_score*len(query_match)/len(self)
         self.score = query_match.total_score/len(self)
 
+    def get_qm_score(self):
+        return self.score*len(self)
+
     def __eq__(self, other):
 
         if not isinstance(other,CandidateNetwork):

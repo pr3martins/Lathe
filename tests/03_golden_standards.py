@@ -7,7 +7,7 @@ config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
 queryset_configs.sort()
 
-for name,filepath in queryset_configs[0:1]:
+for name,filepath in queryset_configs:
     print(f'Queryset:{name}')
     config = ConfigHandler(reset=True,queryset_config_filepath=filepath)
     evaluation_handler = EvaluationHandler()
