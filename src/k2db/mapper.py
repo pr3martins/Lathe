@@ -1,6 +1,5 @@
 import json
 from timeit import default_timer as timer
-from pyspark import SparkContext, SparkConf
 
 from k2db.utils import ConfigHandler, Similarity, get_logger, Tokenizer, next_path
 from k2db.index import IndexHandler
@@ -31,20 +30,6 @@ class Mapper:
         self.evaluation_handler = EvaluationHandler()
         self.candidate_network_handler = CandidateNetworkHandler(database_handler = self.database_handler)
         self.evaluation_handler.load_golden_standards()
-
-    def load_spark(self,**kwargs):
-        spark_context = kwargs.get('spark_context',None)
-        num_workers = kwargs.get('num_workers',2)
-        if spark_context:
-            self.spark_context = spark_context
-        else:
-            self.num_workers = num_workers
-            spark_conf = SparkConf().setAppName('K2D').setMaster(f'local[{self.num_workers}]')
-            spark_context = SparkContext(conf=spark_conf)
-            self.spark_context = spark_context
-
-    def stop_spark(self):
-        self.spark_context.stop()
 
     def load_queryset(self):
         with open(self.config.queryset_filepath,mode='r') as f:
@@ -91,11 +76,11 @@ class Mapper:
 
 
     def keyword_search(self,keyword_query,**kwargs):
-        parallel_cn = kwargs.get('parallel_cn', False)
         repeat = kwargs.get('repeat',1)
         assume_golden_qms = kwargs.get('assume_golden_qms',False)
         max_num_query_matches = kwargs.get('max_num_query_matches',5)
         input_desired_cn = kwargs.get('input_desired_cn',False)
+        skip_cn_generations = kwargs.get('skip_cn_generations',False)
 
         weight_scheme = kwargs.get('weight_scheme',3)
         #preventing to send multiple values for weight_scheme
@@ -152,28 +137,20 @@ class Mapper:
             else:
                 kwargs['desired_cn'] = None
 
-            ranked_cns = []
-            if parallel_cn == False:
+            if not skip_cn_generations:
                 ranked_cns = self.candidate_network_handler.generate_cns(
                     self.index_handler.schema_index,
                     self.index_handler.schema_graph,
                     ranked_query_matches,
                     keywords,
                     weight_scheme,
-                     **kwargs,
+                        **kwargs,
                 )
             else:
-                ranked_cns = self.candidate_network_handler.parallelized_generate_cns(
-                    self.spark_context,
-                    self.index_handler.schema_index,
-                    self.index_handler.schema_graph,
-                    ranked_query_matches,
-                    keywords,
-                    weight_scheme,
-                    **kwargs,
-                )
+                ranked_cns=[]
 
-            logger.info('%d CNs generated: %s',len(ranked_cns),[(cn.score,cn)for cn in ranked_cns])
+
+            logger.info('%d CNs generated: %s',len(ranked_cns),[(cn.score,cn) for cn in ranked_cns])
             end_cn_time = timer()
 
             elapsed_time['km'].append(   start_qm_time -start_skm_time)

@@ -16,7 +16,6 @@ class CandidateNetworkHandler:
 
     def generate_cns(self,schema_index,schema_graph,ranked_query_matches,keywords,weight_scheme,**kwargs):
         topk_cns = kwargs.get('topk_cns',20)
-        pospruning = kwargs.get('pospruning',False)
 
         returned_cns=[]
         num_cns_available = topk_cns
@@ -31,8 +30,7 @@ class CandidateNetworkHandler:
                 if num_cns_available<=0:
                     break
 
-                if not pospruning or not self.is_cn_empty(schema_graph,candidate_network):
-                    returned_cns.append(candidate_network)
+                returned_cns.append(candidate_network)
 
                 num_cns_available -=1
         ranked_cns=sorted(
@@ -44,46 +42,20 @@ class CandidateNetworkHandler:
 
         return ranked_cns
 
-
-    # def parallelized_generate_cns(self, spark_context, schema_index, schema_graph,ranked_query_matches,keywords,weight_scheme, **kwargs):
-    #     topk_cns = kwargs.get('topk_cns',20)
-    #     pospruning = kwargs.get('pospruning',False)
-
-    #     qms_rdd = spark_context.parallelize(ranked_query_matches)
-    #     cns_rdd = qms_rdd.flatMap(lambda query_match: self.generate_cns_per_qm(schema_index,schema_graph,query_match,keywords,weight_scheme,**kwargs))
-    #     if pospruning:
-    #         cns_rdd = cns_rdd.filter(lambda candidate_network: not self.is_cn_empty(schema_graph,candidate_network))
-
-    #     #To preserve the order of QMs, we sort the CNs using the score of QMs as well
-    #     if topk_cns!= -1:
-    #         ranked_cns = cns_rdd.takeOrdered(
-    #             topk_cns,
-    #             lambda candidate_network: (
-    #                 -candidate_network.get_qm_score(),
-    #                 -candidate_network.score
-    #             )
-    #         )
-    #     else:
-    #         ranked_cns = cns_rdd.sortBy(                
-    #             lambda candidate_network: (
-    #                 -candidate_network.get_qm_score(),
-    #                 -candidate_network.score
-    #             )
-    #         ).collect()
-
-    #     return ranked_cns
-
     def generate_cns_per_qm(self,schema_index,schema_graph,query_match,keywords,weight_scheme,**kwargs):
         max_cn_size = kwargs.get('max_cn_size',5)
         topk_cns_per_qm = kwargs.get('topk_cns_per_qm',1)
+        
+        instance_based_pruning = kwargs.get('instance_based_pruning',False)
+        max_database_accesses  = kwargs.get('max_database_accesses',7)
 
         directed_neighbor_sorting_function = kwargs.get('directed_neighbor_sorting_function',
                                                         self.factory_sum_norm_attributes(schema_index,weight_scheme))
-        prepruning = kwargs.get('prepruning',False)
         schema_prunning = kwargs.get('schema_prunning',True)
         desired_cn = kwargs.get('desired_cn',None)
 
         returned_cns = []
+        empty_cns = []
         pruned_cns = set()
 
         def meet_pruning_conditions(jnkm):
@@ -94,6 +66,7 @@ class CandidateNetworkHandler:
                 jnkm not in F and
                 jnkm not in pruned_cns and
                 jnkm not in returned_cns and
+                jnkm not in empty_cns and
                 # max cn size pruning
                 len(jnkm)<=max_cn_size and
                 (
@@ -149,20 +122,28 @@ class CandidateNetworkHandler:
                             if not meet_pruning_conditions(next_jnkm):
                                 # print(f'next_jnkm:\n{next_jnkm}')
                                 if next_jnkm.is_total(query_match):
-                                    if not next_jnkm.contains_keyword_free_match_leaf():
-                                        if not prepruning or not self.is_cn_empty(schema_graph,next_jnkm):
+                                    if not next_jnkm.contains_keyword_free_match_leaf():                                      
+                                        if not instance_based_pruning or not self.is_cn_empty(schema_graph,next_jnkm):
                                             next_jnkm.calculate_score(query_match)
-                                            returned_cns.add(next_jnkm)
+                                            returned_cns.append(next_jnkm)
+                                        else:
+                                            empty_cns.append(next_jnkm)
 
-                                            if desired_cn is not None and next_jnkm == desired_cn:
-                                                return returned_cns
+                                        if desired_cn is not None and next_jnkm == desired_cn:
+                                            return returned_cns
                                     else:
                                         #reduce JNKM
                                         # print(f'next_jnkm(pruned): non minimal\n{next_jnkm}')
                                         pruned_cns.add(next_jnkm)
                                         continue
 
-                                    if len(returned_cns)>=topk_cns_per_qm:
+                                    if (
+                                        len(returned_cns)>=topk_cns_per_qm or
+                                        (
+                                            instance_based_pruning and
+                                            len(returned_cns)+len(empty_cns)>=max_database_accesses
+                                        )
+                                    ):
                                         return returned_cns
 
                                 elif len(next_jnkm)<max_cn_size:
