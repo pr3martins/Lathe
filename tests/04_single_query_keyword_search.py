@@ -28,10 +28,9 @@ for i,item in enumerate(mapper.queryset):
 ans = int(input())
 # ans = 45
 
-pospruning = False
-prepruning = True
-parallel_cn = False
 topk_cns = 20
+instance_based_pruning = False
+max_database_accesses = 7
 assume_golden_qms=False
 desired_cn = False
 topk_cns_per_qm = 2
@@ -39,18 +38,16 @@ max_num_query_matches = 5
 
 keyword_query = mapper.queryset[ans-1]['keyword_query']
 
-if parallel_cn:
-    mapper.load_spark()
 
 results_for_query = mapper.keyword_search(
     keyword_query,
-    pospruning=pospruning,
-    parallel_cn =parallel_cn,
+    max_num_query_matches=max_num_query_matches,
+    topk_cns_per_qm = topk_cns_per_qm,
     topk_cns=topk_cns,
+    instance_based_pruning=instance_based_pruning,
+    max_database_accesses =  max_database_accesses,
     assume_golden_qms=assume_golden_qms,
     desired_cn = desired_cn,
-    topk_cns_per_qm = topk_cns_per_qm,
-    max_num_query_matches=max_num_query_matches,
 )
 
 results = {

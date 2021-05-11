@@ -51,12 +51,19 @@ class EvaluationHandler:
         '''
         results_filename = kwargs.get('results_filename',None)
         approach = kwargs.get('approach','standard')
+        skip_ranking_evaluation = kwargs.get('skip_ranking_evaluation',False)
+        write_evaluation_only  = kwargs.get('write_evaluation_only',False)
 
-        self.evaluate_query_matches(results)
-        self.evaluate_candidate_networks(results)
+        if not skip_ranking_evaluation:
+            self.evaluate_query_matches(results)
+            self.evaluate_candidate_networks(results)
         self.evaluate_performance(results)
         self.evaluate_num_keyword_matches(results)
         self.evaluate_num_query_matches(results)
+        self.evaluate_num_candidate_networks(results)
+
+        if write_evaluation_only:
+            del results['results']
 
         if results_filename is None:
             results_filename = next_path(f'{self.config.results_directory}{self.config.queryset_name}-{approach}-%03d.json')
@@ -157,8 +164,12 @@ class EvaluationHandler:
             if 'num_query_matches' in item:
                 results['evaluation']['num_query_matches'].append(item['num_query_matches'])
 
-
-
+    def evaluate_num_candidate_networks(self,results,**kwargs):
+        results.setdefault('evaluation',{})
+        results['evaluation']['num_candidate_networks']=[]
+        for item in results['results']:
+            if 'num_candidate_networks' in item:
+                results['evaluation']['num_candidate_networks'].append(item['num_candidate_networks'])
 
     def get_relevant_position(self,items,ground_truth):
         for i,item in enumerate(items):

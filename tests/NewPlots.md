@@ -24,7 +24,8 @@ from k2db.utils import ConfigHandler, Similarity, last_path
 from k2db.mapper import Mapper
 from k2db.evaluation import EvaluationHandler
 
-def load_evaluations(approaches,subfolder=''):
+
+def load_evaluation(approaches,subfolder='',show_not_found = True):
     config = ConfigHandler()
     queryset_configs = config.get_queryset_configs()
     queryset_configs.sort()
@@ -36,34 +37,47 @@ def load_evaluations(approaches,subfolder=''):
             config.results_directory += subfolder
 
             results_filename = f'{config.results_directory}{config.queryset_name}-{approach}.json'
+            
 #             results_filename = last_path(f'{config.results_directory}{config.queryset_name}-{approach}-%03d.json')
             try:
                 with open(results_filename,mode='r') as f:
                     data = load(f)
             except FileNotFoundError:
-                print(f'File {results_filename} not found.')
+                if show_not_found:
+                    print(f'File {results_filename} not found.')
                 continue
             evaluation.setdefault(data['database'],{}).setdefault(qsconfig_name,{}).setdefault(approach,{})
             evaluation[data['database']][qsconfig_name][approach] = data['evaluation']
     return evaluation
 
-approaches = ['standard','pospruning','prepruning']
-subfolder = '4cns_per_qm/ws0/'
+approaches = ['standard','ipruning']
+quest_approaches = ['ipruning']
+# subfolder = '10_repeat_cn_generation/1cns_per_qm/'
+subfolder = 'ipruning_checks/1cns_per_qm/7db_accesses/'
 
 
-golden_qms_subfolder = 'assume_gold_qms/'
-golden_qms_approaches = ['standard','pospruning']
+golden_qms_subfolder = 'cns_from_golden_qms/'
+golden_qms_approaches = ['standard','ipruning']
 
 labels_hash = {
+    #datasets
+    'imdb_coffman_subset':'IMDb',
+    'mondial_coffman':'Mondial',
+    #querysets
     'coffman_imdb':'IMDb',
     'coffman_imdb_clear_intents':'IMDb-DI',
 #     'coffman_imdb_renamed':'IMDb',
 #     'coffman_imdb_renamed_clear_intents':'IMDb-DI',
     'coffman_mondial':'MOND',
     'coffman_mondial_clear_intents':'MOND-DI',
+    #approaches
     'standard':'CN-Std',
     'pospruning':'CN-Pos',
     'prepruning':'CN-Pre',
+    'ipruning':'CN-IP',
+    #comparison with quest approaches
+    ('QUEST','ipruning'):'Lathe',
+    #phases
     'skm':'Schema-Keyword Match',
     'vkm':'Value-Keyword Match',
     'qm':'Query Match',
@@ -72,9 +86,10 @@ labels_hash = {
 
 phases = ['skm','vkm','qm','cn']
 
-evaluation = load_evaluations(approaches,subfolder=subfolder)
+evaluation = load_evaluation(approaches,subfolder=subfolder)
 
-assume_golden_qms_evaluation = load_evaluations(golden_qms_approaches,subfolder=golden_qms_subfolder)
+assume_golden_qms_evaluation = load_evaluation(golden_qms_approaches,subfolder=golden_qms_subfolder)
+
 ```
 
 ## Num. Keyword Matches
@@ -139,6 +154,27 @@ def plot_num_query_matches(evaluation,labels_hash):
 plot_num_query_matches(evaluation,labels_hash)
 ```
 
+## Query Matches Max relevant position
+
+```python
+def max_relevant_qm_position(labels_hash,subfolder='qm_generation/',show_not_found=False): 
+    original_subfolder = subfolder 
+    results = {}
+    for i in range(4):
+        weight_scheme = f'ws{i}'
+        subfolder = f'{original_subfolder}{weight_scheme}/'
+        local_evaluation = load_evaluation(approaches,subfolder=subfolder,show_not_found=show_not_found)    
+
+        for database in local_evaluation:
+            for queryset in local_evaluation[database]:
+                max_relevant_position = max(local_evaluation[database][queryset]['ipruning']['query_matches']['relevant_positions'])
+                results.setdefault(labels_hash[queryset],[])
+                results[labels_hash[queryset]].append( (max_relevant_position) )
+    return results
+
+max_relevant_qm_position(labels_hash,subfolder='qm_generation/')
+```
+
 ## Query Match Ranking
 
 ```python
@@ -177,6 +213,44 @@ def query_matches_precision_plot(evaluation,labels_hash):
     plt.show()
 
 query_matches_precision_plot(evaluation,labels_hash)
+```
+
+```python
+def query_matches_mrr_plot(evaluation,labels_hash):
+    config = ConfigHandler()
+    metrics = [f'p@{k+1}' for k in range(10)]
+    dashes_order = [(1,0),(2,2),(1,0),(2,2)]
+
+    precision_data = [
+        (
+            labels_hash[queryset],
+            [
+                evaluation[database][queryset]['standard']['query_matches'][metric]
+                for metric in metrics
+            ]
+        )
+        for database in evaluation
+        for queryset in evaluation[database]
+    ]
+
+    x_data = range(1,10+1)
+    for (label,y_data),dashes in zip(precision_data,dashes_order):
+        plt.plot(
+            x_data,
+            y_data,
+            linewidth = 3,
+            label = label,
+            dashes = dashes
+        )
+
+    plt.xticks(np.arange(1, 10+1, 1.0))
+    plt.xlabel('Rank Position K')
+    plt.ylabel('MRR')
+    plt.legend()
+    plt.savefig(f'{config.plots_directory}qms-precision-at-k.pdf')  
+    plt.show()
+
+query_matches_mrr_plot(evaluation,labels_hash)
 ```
 
 ## Candidate Network Ranking
@@ -355,6 +429,34 @@ def instance_pruning_plot(evaluation,labels_hash,approaches):
 instance_pruning_plot(evaluation,labels_hash,approaches)
 ```
 
+```python
+merged_evaluation = {}
+for i in [1,2,4,7]:
+    subfolder = f'cn_generation/{i}cns_per_qm/'
+    print(f'{i} CNs per QM')
+    evaluation = load_evaluation(approaches,subfolder=subfolder)
+    for dataset in evaluation:
+        merged_evaluation.setdefault(dataset,{})
+        
+        for queryset in evaluation[dataset]:
+            merged_evaluation[dataset].setdefault(queryset,{})
+            
+            for approach in evaluation[dataset][queryset]:
+                new_approach = f'{i}{approach}'
+                merged_evaluation[dataset][queryset][new_approach] = evaluation[dataset][queryset][approach]
+                
+    instance_pruning_plot(evaluation,labels_hash,approaches)
+```
+
+```python
+new_approaches = ['1standard', '4standard', '7standard','1ipruning','2ipruning']
+for approach in new_approaches:
+    i = approach[0]
+    root_label = labels_hash[approach[1:]][3:]
+    labels_hash[approach] = f'{i}CN-{root_label}'
+instance_pruning_plot(merged_evaluation,labels_hash,new_approaches)
+```
+
 #### CNs from golden QMs
 
 ```python
@@ -404,6 +506,103 @@ def instance_pruning_plot(evaluation,labels_hash,approaches):
 instance_pruning_plot(assume_golden_qms_evaluation,labels_hash,golden_qms_approaches)
 ```
 
+### Lineplot CNs per QM
+
+```python
+def plot_cns_per_qm(evaluation,labels_hash,approaches):
+    config = ConfigHandler()
+    metrics = [f'p@{k+1}' for k in range(10)]
+    dashes_order = [(1,0),(1,0),(2,2),(2,2)]
+
+    data = [
+        (
+            labels_hash[dataset],
+            [
+                (
+                    labels_hash[queryset],labels_hash[approach],
+                    [
+                        evaluation[dataset][queryset][approach]['candidate_networks'][metric]
+                        for metric in metrics
+                    ]
+                )
+                for queryset in evaluation[dataset]
+                for approach in approaches
+            ]
+        )
+        for dataset in evaluation
+    ]
+
+
+    
+    x_data = range(1,10+1)
+    for dataset,results in data:
+        for (queryset,approach,y_data),dashes in zip(results,dashes_order):
+            plt.plot(
+                    x_data,
+                    y_data,
+                    linewidth = 3,
+                    label = f'{approach}/{queryset[5:]}',
+                    dashes = dashes
+                )
+
+        plt.xticks(np.arange(1, 10+1, 1.0))
+        plt.xlabel('Rank Position K')
+        plt.ylabel('P@K')
+        plt.legend()
+        plt.savefig(f'{config.plots_directory}{dataset}-cns-per-qms-precision-at-k.pdf')  
+        plt.show()
+    
+
+plot_cns_per_qm(assume_golden_qms_evaluation,labels_hash,golden_qms_approaches)
+```
+
+```python
+def plot_cns_per_qm(evaluation,labels_hash,approaches):
+    config = ConfigHandler()
+    metrics = [f'p@{k+1}' for k in range(10)]
+    dashes_order = [(1,0),(2,2),(1,0),(2,2)]
+
+    data = [
+        (
+            labels_hash[approach],
+            [
+                (
+                    labels_hash[queryset],labels_hash[dataset],
+                    [
+                        evaluation[dataset][queryset][approach]['candidate_networks'][metric]
+                        for metric in metrics
+                    ]
+                )
+                for dataset in evaluation
+                for queryset in evaluation[dataset]
+            ]
+        )
+        for approach in approaches
+        
+    ]
+
+    x_data = range(1,10+1)
+    for dataset,results in data:
+        for (queryset,approach,y_data),dashes in zip(results,dashes_order):
+            plt.plot(
+                    x_data,
+                    y_data,
+                    linewidth = 3,
+                    label = queryset,
+                    dashes = dashes
+                )
+
+        plt.xticks(np.arange(1, 10+1, 1.0))
+        plt.xlabel('Rank Position K')
+        plt.ylabel('P@K')
+        plt.legend()
+        plt.savefig(f'{config.plots_directory}{approach}-cns-per-qms-precision-at-k.pdf')  
+        plt.show()
+    
+
+plot_cns_per_qm(assume_golden_qms_evaluation,labels_hash,golden_qms_approaches)
+```
+
 ### QUEST Comparison CN Ranking
 
 ```python
@@ -411,25 +610,30 @@ def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = F
     config = ConfigHandler()
     precision_hard_coded = {
         'QUEST': (0.808, 0.073),
-        'BANKS': (0.244, 0.044),
-        'DISCOVER': (0.601, 0.043),
-        'DISCOVER-II': (0.443, 0.046),
-        'BANKS-II': (0.666, 0.042),
-        'DPBF': (0.769, 0.037),
-        'BLINKS': (0.83, 0.033),
-        'STAR': (0.688, 0.042)
+#         'BANKS': (0.244, 0.044),
+#         'DISCOVER': (0.601, 0.043),
+#         'DISCOVER-II': (0.443, 0.046),
+#         'BANKS-II': (0.666, 0.042),
+#         'DPBF': (0.769, 0.037),
+#         'BLINKS': (0.83, 0.033),
+#         'STAR': (0.688, 0.042),
+        'Lathe45': (0.956, 0.0307),
     }
 
+    {'Recall': {'Lathe': (0.9777777777777777, 0.02197392144324641)},
+ 'P@1': {'Lathe': (0.9555555555555556, 0.030720653856781806)}}
+    
 
     recall_hard_coded = {
         'QUEST':(1,0),
-        'BANKS':(0.332,0.043),
-        'DISCOVER':(0.774,0.033),
-        'DISCOVER-II':(0.788,0.033),
-        'BANKS-II':(0.769,0.035),
-        'DPBF':(0.955,0.016),
-        'BLINKS':(0.968,0.011),
-        'STAR':(0.616,0.044),
+#         'BANKS':(0.332,0.043),
+#         'DISCOVER':(0.774,0.033),
+#         'DISCOVER-II':(0.788,0.033),
+#         'BANKS-II':(0.769,0.035),
+#         'DPBF':(0.955,0.016),
+#         'BLINKS':(0.968,0.011),
+#         'STAR':(0.616,0.044),
+        'Lathe45': (0.977, 0.0219),
         }
 
 
@@ -441,7 +645,7 @@ def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = F
     queries_condition = lambda num_query: num_query<30 or num_query>39
 
     for x,approach in enumerate(approaches):
-        label = labels_hash[approach]
+        label = labels_hash[('QUEST',approach)]
         
         precision_at_1 = np.array(
             [       
@@ -457,7 +661,7 @@ def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = F
                 1 
                 if position!=-1 else 0 
                 for num_query,position in enumerate(evaluation['mondial_coffman']['coffman_mondial'][approach]['candidate_networks']['relevant_positions'])
-                if queries_condition
+                if queries_condition(num_query)
             ]
         )
 
@@ -480,34 +684,39 @@ def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = F
         data['Recall'].update(recall_hard_coded)    
 
     for experiment in data:
-        fig, ax = plt.subplots(figsize = [len(data['P@1'])*1.1, 4.8])
+#         fig, ax = plt.subplots(figsize = [len(data['P@1'])*1.1, 4.8])
+        fig, ax = plt.subplots(figsize = [6,len(data['P@1'])*1.1])
 
-        for x,(label,(mean,std_err)) in enumerate(data[experiment].items()):
-            ax.bar(x,
+        for y,(label,(mean,std_err)) in enumerate(data[experiment].items()):
+            ax.barh(y,
                    mean,
-                   width=0.6,
-                   yerr=std_err,
+                   height=0.6,
+                   xerr=std_err,
                    ecolor='black',
                    capsize=10,
                    fill=True
               )
 
 
-        ax.set_ylabel(experiment)
+        ax.set_xlabel(experiment, fontsize=14)
+        ax.set_yticks(range(len(data[experiment])))
+        ax.set_yticklabels(data[experiment], fontsize=12)
 
-        ax.set_xticks(range(len(data[experiment])))
-        ax.set_xticklabels(data[experiment])
-
-        ax.set_title('Comparison with other approaches')
-        ax.yaxis.grid(True)
+#         ax.set_title('Comparison with other approaches')
+        ax.xaxis.grid(True)
 
         plt.tight_layout()
         experiment_name = 'precision' if experiment == 'P@1' else 'recall'
-        filename = f'{config.plots_directory}comparison-with-QUEST-{experiment_name}.pdf'
+        filename = f'{config.plots_directory}comparison-with-QUEST-{experiment_name}-35queries.pdf'
         plt.savefig(filename)
         plt.show()
-        
-plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = False)
+    return data
+
+plot_quest_comparison(evaluation,labels_hash,quest_approaches,other_approaches = False)
+```
+
+```python
+
 ```
 
 #### New values
@@ -573,7 +782,7 @@ def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = F
     queries_condition = lambda num_query: True
 
     for x,approach in enumerate(approaches):
-        label = labels_hash[approach]
+        label = labels_hash[('QUEST',approach)]
         
         precision_at_1 = np.array(
             [       
@@ -589,7 +798,7 @@ def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = F
                 1 
                 if position!=-1 else 0 
                 for num_query,position in enumerate(evaluation['mondial_coffman']['coffman_mondial'][approach]['candidate_networks']['relevant_positions'])
-                if queries_condition
+                if queries_condition(num_query)
             ]
         )
 
@@ -630,16 +839,99 @@ def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = F
         ax.set_xticks(range(len(data[experiment])))
         ax.set_xticklabels(data[experiment])
 
-        ax.set_title('Comparison with other approaches')
+#         ax.set_title('Comparison with other approaches')
         ax.yaxis.grid(True)
 
         plt.tight_layout()
         experiment_name = 'precision' if experiment == 'P@1' else 'recall'
-        filename = f'{config.plots_directory}comparison-with-QUEST-{experiment_name}.pdf'
+        filename = f'{config.plots_directory}comparison-with-QUEST-{experiment_name}-45queries.pdf'
         plt.savefig(filename)
         plt.show()
+        return data
         
-plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = False)
+plot_quest_comparison(evaluation,labels_hash,quest_approaches,other_approaches = False)
+```
+
+## Compare only lath using 45 queries
+
+```python
+def plot_quest_comparison(evaluation,labels_hash,approaches,other_approaches = False):
+    config = ConfigHandler()
+
+
+    data = {
+        'Recall':{},
+        'P@1':{},
+    }
+    
+    queries_condition = lambda num_query: 1
+
+    for x,approach in enumerate(approaches):
+        label = labels_hash[('QUEST',approach)]
+        
+        precision_at_1 = np.array(
+            [       
+                1 
+                if position==1 else 0 
+                for num_query,position in enumerate(evaluation['mondial_coffman']['coffman_mondial'][approach]['candidate_networks']['relevant_positions'])
+                if queries_condition(num_query)
+            ]
+        )
+
+        recall = np.array(
+            [       
+                1 
+                if position!=-1 else 0 
+                for num_query,position in enumerate(evaluation['mondial_coffman']['coffman_mondial'][approach]['candidate_networks']['relevant_positions'])
+                if queries_condition(num_query)
+            ]
+        )
+
+        precision_std_err = precision_at_1.std()/(len(precision_at_1)**0.5)    
+        data['P@1'][label] = ( 
+            precision_at_1.mean(),
+            precision_std_err
+        )
+
+        recall_std_err = recall.std()/(len(recall)**0.5)
+        data['Recall'][label] = (
+            recall.mean(),
+            recall_std_err
+        )
+
+#         fig, ax = plt.subplots(figsize = [len(data['P@1'])*1.1, 4.8])
+#     fig, ax = plt.subplots(figsize = [6,len(data['P@1'])*1.1])
+    fig, ax = plt.subplots(figsize = [6,len(data['P@1'])*2])
+    colors = ['red','green']
+    for i,experiment in enumerate(data):
+        for j,(label,(mean,std_err)) in enumerate(data[experiment].items()):
+            y=i+1*j
+            ax.barh(y,
+                   mean,
+                   height=0.6,
+                   xerr=std_err,
+                   ecolor='black',
+                   capsize=10,
+                   fill=True,
+                    color=colors[i],
+              )
+
+
+#     ax.set_xlabel('Lathe with 45 queries', fontsize=14)
+    ax.set_yticks([0,1])
+    ax.set_yticklabels(['Recall','P@1'], fontsize=12)
+
+#         ax.set_title('Comparison with other approaches')
+    ax.xaxis.grid(True)
+
+    plt.tight_layout()
+    experiment_name = 'precision' if experiment == 'P@1' else 'recall'
+    filename = f'{config.plots_directory}comparison-with-QUEST-{experiment_name}-45queries.pdf'
+    plt.savefig(filename)
+    plt.show()
+    return data
+
+plot_quest_comparison(evaluation,labels_hash,quest_approaches,other_approaches = False)
 ```
 
 ## Performance
@@ -695,7 +987,58 @@ plot_performance_bar(evaluation,labels_hash,phases,vertical=True)
 plot_performance_bar(evaluation,labels_hash,phases,vertical=False)
 ```
 
+### Performance per Database Checks
+
+```python
+topk_cns_per_qm_list = [1]
+max_database_accesses_list = [1,2,3,4,5,6,7,1000]
+approaches = ['ipruning']
+
+merged_evaluation = {}
+for max_database_accesses in max_database_accesses_list:
+    for topk_cns_per_qm in topk_cns_per_qm_list:
+        subfolder = f'ipruning_checks/{topk_cns_per_qm}cns_per_qm/{max_database_accesses}db_accesses/'
+        for approach in approaches:
+            evaluation = load_evaluation(approaches,subfolder=subfolder)
+            for dataset in evaluation:
+                merged_evaluation.setdefault(dataset,{})
+                for queryset in evaluation[dataset]:
+                    new_approach = f'{topk_cns_per_qm}{approach}'
+                    db_checks = f'{max_database_accesses}dbckecks'
+                    
+                    merged_evaluation[dataset].setdefault(queryset,{})
+                    merged_evaluation[dataset][queryset].setdefault(new_approach,{})
+                    merged_evaluation[dataset][queryset][new_approach].setdefault(db_checks,{})
+
+                    merged_evaluation[dataset][queryset][new_approach][db_checks] = evaluation[dataset][queryset][approach]
+```
+
+```python
+from copy import deepcopy
+def avg(x):
+    return sum(x)/len(x)
+```
+
+```python
+data = deepcopy(merged_evaluation)
+for dataset in data:
+    for queryset in data[dataset]:
+        for approach in data[dataset][queryset]:
+            time_list = [
+                avg(data[dataset][queryset][approach][num_checks]['performance']['cn'])
+                for num_checks in data[dataset][queryset][approach]
+            ]
+            data[dataset][queryset][approach] = time_list            
+data
+```
+
 ## Weighting Schemes Analysis
+
+```python
+subfolder = 'cn_generation/1cns_per_qm/'
+evaluation = load_evaluation(approaches,subfolder=subfolder)
+plot_performance_bar(evaluation,labels_hash,phases,vertical=False)
+```
 
 ```python
 # for weight_scheme in different_ws_evaluations:
@@ -769,10 +1112,4 @@ plot_performance_bar(evaluation,labels_hash,phases,vertical=False)
         
 # for line in lines:
 #     print(line)
-```
-
-```python
-x=[1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1]
-y = [i for i,position in enumerate(x) if position==-1]
-y
 ```

@@ -44,6 +44,7 @@ class Mapper:
         results_filename = kwargs.get('results_filename',None)
         export_results = kwargs.get('export_results',False)
         approach = kwargs.get('approach','standard')
+        preprocessed_results = kwargs.get('preprocessed_results',{})
 
         results =[]
 
@@ -55,7 +56,11 @@ class Mapper:
             keyword_query = item['keyword_query']
 
             print(f'Running keyword search for query: {keyword_query}')
-            result = self.keyword_search(keyword_query,**kwargs)
+            if keyword_query in preprocessed_results:
+                print('  Preprocessed results loaded')
+                result = preprocessed_results[keyword_query]
+            else:
+                result = self.keyword_search(keyword_query,**kwargs)
             results.append(result)
 
         data = {
@@ -174,6 +179,7 @@ class Mapper:
             'num_keyword_matches':len(kw_matches),
             #consider len of unranked query matches
             'num_query_matches':  len(query_matches),
+            'num_candidate_networks':  len(ranked_cns),
         }
 
         return result
