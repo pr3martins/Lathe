@@ -117,27 +117,40 @@ class CandidateNetwork(Graph):
         if len(self) < 3:
             return True
 
-        def has_duplicate_tables(neighbors):
+        def has_duplicate_tables(keyword_match,neighbors,direction='>'):
+            # print(f'keyword_match:\n{keyword_match}\nneighbors:\n{neighbors}\ndirection:{direction}\n')
+
             if len(neighbors)>=2:
-                tables = set()
+                neighbor_tables = Counter()
+                fkeys_tables = Counter()
+
                 for neighbor_km,_ in neighbors:
-                    if neighbor_km.table not in tables:
-                        tables.add(neighbor_km.table)
-                    else:
-                        return True
+                    neighbor_tables[neighbor_km.table]+=1
+
+                    if neighbor_km.table not in fkeys_tables:
+                        if direction=='>':
+                            edge_info = schema_graph.get_edge_info(keyword_match.table, neighbor_km.table)
+                        elif direction=='<':
+                            edge_info = schema_graph.get_edge_info(neighbor_km.table, keyword_match.table)
+
+                        fkeys_tables[neighbor_km.table]= len(edge_info)
+
+                return len(neighbor_tables-fkeys_tables)>0
+
             return False
 
         for vertex in self.vertices():
+            km,_ = vertex
 
             #check if there is a case A->B<-C, when A.table==C.table
             outgoing_neighbors = list(self.outgoing_neighbors(vertex))
-            if has_duplicate_tables(outgoing_neighbors):
+            if has_duplicate_tables(km,outgoing_neighbors):
                 return False
 
             #check if there is a case A<-B->C, when A.table==C.table and
             #there is no duplicated foreign key in B in the database instance
             reciprocal_neighbors = list(self.reciprocal_neighbors(schema_graph,vertex))
-            if has_duplicate_tables(reciprocal_neighbors):
+            if has_duplicate_tables(km,reciprocal_neighbors,direction='<'):
                 return False
         return True
 
@@ -286,6 +299,8 @@ class CandidateNetwork(Graph):
         show_evaluation_fields=kwargs.get('show_evaluation_fields',False)
         
         hashtables = {} # used for disambiguation
+        used_fks = {}
+
 
         selected_attributes = set()
         filter_conditions = []
@@ -326,15 +341,19 @@ class CandidateNetwork(Graph):
                                             foreign_keyword_match.table)
                 
                 for constraint in edge_info:
-                    _,attribute_mappings = edge_info[constraint]
+                    if constraint not in used_fks.setdefault(constraint_alias,[]):
+                        used_fks[constraint_alias].append(constraint)
 
-                    join_conditions = []                  
-                    for (constraint_column,foreign_column) in attribute_mappings:
-                        join_conditions.append(
-                            f'{constraint_alias}.{constraint_column} = {foreign_alias}.{foreign_column}'
-                        )
-                    txt_join_conditions = '\n\t\tAND '.join(join_conditions)
-                    selected_tables.append(f'JOIN {keyword_match.table} {alias} ON {txt_join_conditions}')
+                        _,attribute_mappings = edge_info[constraint]
+
+                        join_conditions = []                  
+                        for (constraint_column,foreign_column) in attribute_mappings:
+                            join_conditions.append(
+                                f'{constraint_alias}.{constraint_column} = {foreign_alias}.{foreign_column}'
+                            )
+                        txt_join_conditions = '\n\t\tAND '.join(join_conditions)
+                        selected_tables.append(f'JOIN {keyword_match.table} {alias} ON {txt_join_conditions}')
+                        break
                     
                 if show_evaluation_fields:
                     relationships__search_id.append(f'({alias}.__search_id, {prev_alias}.__search_id)')

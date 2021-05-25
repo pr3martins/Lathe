@@ -1,3 +1,5 @@
+import json
+
 from k2db.mapper import Mapper
 from k2db.utils import ConfigHandler, truncate
 from k2db.evaluation import EvaluationHandler
@@ -28,15 +30,17 @@ for i,item in enumerate(mapper.queryset):
 ans = int(input())
 # ans = 45
 
-topk_cns = 20
-instance_based_pruning = False
-max_database_accesses = 7
+topk_cns = 5
+instance_based_pruning = True
+max_database_accesses = 9
 assume_golden_qms=False
 desired_cn = False
 topk_cns_per_qm = 2
 max_num_query_matches = 5
+weight_scheme = 0
 
 keyword_query = mapper.queryset[ans-1]['keyword_query']
+# keyword_query='kuwait saudi arabia'
 
 
 results_for_query = mapper.keyword_search(
@@ -48,6 +52,7 @@ results_for_query = mapper.keyword_search(
     max_database_accesses =  max_database_accesses,
     assume_golden_qms=assume_golden_qms,
     desired_cn = desired_cn,
+    weight_scheme=weight_scheme,
 )
 
 results = {
@@ -64,13 +69,18 @@ evaluated_results = evaluation_handler.evaluate_results(
     results_filename=f'{config.results_directory}single_query_keyword_search.json'
 )
 
-# print(evaluated_results['evaluation'])
+print(evaluated_results['evaluation'])
 
-query_matches = [QueryMatch.from_json_serializable(json_serializable_qm)
-                                 for json_serializable_qm in results_for_query['query_matches']]
+for i,json_serializable_qm in enumerate(results_for_query['query_matches']):
+    query_match = QueryMatch.from_json_serializable(json_serializable_qm)
+    json_qm = json.dumps(json_serializable_qm,indent=4)
+    print(f'{i+1} QM:\n{query_match}')
+    # print(f'JSON:\n{json_qm}\n')
 
-candidate_networks = [CandidateNetwork.from_json_serializable(json_serializable_cn)
-                                 for json_serializable_cn in results_for_query['candidate_networks']]
-
-for i,candidate_network in enumerate(candidate_networks):
+for i,json_serializable_cn in enumerate(results_for_query['candidate_networks']):
+    candidate_network = CandidateNetwork.from_json_serializable(json_serializable_cn)
+    json_cn = json.dumps(json_serializable_cn,indent=4)
+    sql_cn = candidate_network.get_sql_from_cn(mapper.index_handler.schema_graph)
     print(f'{i+1} CN:\n{candidate_network}')   
+    # print(f'JSON:\n{json_cn}\n')
+    # print(f'SQL:\n{sql_cn}\n')
