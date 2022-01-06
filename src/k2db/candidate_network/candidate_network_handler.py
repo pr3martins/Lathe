@@ -1,17 +1,16 @@
 from queue import deque
 from copy import deepcopy
 
-from k2db.utils import ConfigHandler,get_logger
-from k2db.keyword_match import KeywordMatch
-from k2db.database import DatabaseHandler
+from pylathedb.utils import ConfigHandler,get_logger
+from pylathedb.keyword_match import KeywordMatch
+from pylathedb.database import DatabaseHandler
 
 from .candidate_network import CandidateNetwork
 
 logger = get_logger(__name__)
 class CandidateNetworkHandler:
-    def __init__(self,**kwargs):
-        self.config = ConfigHandler()
-        self.database_handler = kwargs.get('database_handler',DatabaseHandler())
+    def __init__(self,database_handler):
+        self.database_handler = database_handler
 
 
     def generate_cns(self,schema_index,schema_graph,ranked_query_matches,keywords,weight_scheme,**kwargs):
@@ -38,7 +37,6 @@ class CandidateNetworkHandler:
             key=lambda candidate_network: candidate_network.score,
             reverse=True
         )
-
 
         return ranked_cns
 
@@ -99,7 +97,7 @@ class CandidateNetworkHandler:
         while F:
             cur_jnkm = F.popleft()
 
-            for vertex_u in reversed(cur_jnkm.vertices()):
+            for vertex_u in reversed(list(cur_jnkm.vertices())):
                 keyword_match,_ = vertex_u
 
                 sorted_directed_neighbors = sorted(
@@ -152,7 +150,7 @@ class CandidateNetworkHandler:
                                 else:
                                     pruned_cns.add(next_jnkm)
                             else:
-                                pruned_cns.add(next_jnkm)                                
+                                pruned_cns.add(next_jnkm)  
         return returned_cns
 
     def factory_sum_norm_attributes(self,schema_index,weight_scheme):

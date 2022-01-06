@@ -1,18 +1,18 @@
 import json
 from collections import OrderedDict
+from os import makedirs
+from os.path import dirname
 
-from k2db.utils import ConfigHandler,get_logger,next_path,last_path
-from k2db.query_match import QueryMatch
-from k2db.candidate_network import CandidateNetwork
+from pylathedb.utils import ConfigHandler,get_logger,next_path,last_path
+from pylathedb.query_match import QueryMatch
+from pylathedb.candidate_network import CandidateNetwork
 
 logger = get_logger(__name__)
 
 class EvaluationHandler:
 
-    def __init__(self, config=None):
+    def __init__(self, config):
         self.config = config
-        if self.config is None:
-            self.config =ConfigHandler()
 
     def load_golden_standards(self):
         with open(self.config.queryset_filepath,mode='r') as f:
@@ -66,7 +66,11 @@ class EvaluationHandler:
             del results['results']
 
         if results_filename is None:
+            makedirs(self.config.results_directory, exist_ok=True)
             results_filename = next_path(f'{self.config.results_directory}{self.config.queryset_name}-{approach}-%03d.json')
+        else:
+            makedirs(dirname(results_filename), exist_ok=True)
+
         
         with open(results_filename,mode='w') as f:
             logger.info(f'Writing evaluated results in {results_filename}')

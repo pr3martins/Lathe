@@ -4,17 +4,16 @@ import re
 import psycopg2
 from psycopg2.sql import SQL, Identifier
 
-from k2db.utils import ConfigHandler, get_logger, Tokenizer
+from pylathedb.utils import ConfigHandler, get_logger, Tokenizer
 
 logger = get_logger(__name__)
 class DatabaseIter:
-    def __init__(self, database_table_columns, **kwargs):
-        self.database_table_columns=database_table_columns
-
+    def __init__(self,config,database_table_columns, **kwargs):
         self.limit_per_table = kwargs.get('limit_per_table', None)
         self.tokenizer = kwargs.get('tokenizer', Tokenizer())
-
-        self.config = ConfigHandler()
+        self.config = config
+        self.database_table_columns=database_table_columns
+        
 
         self.table_hash = self._get_indexable_schema_elements()
 

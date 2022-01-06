@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from k2db.utils import ConfigHandler
-from k2db.mapper import Mapper
-from k2db.evaluation import EvaluationHandler
+from pylathedb.utils import ConfigHandler
+from pylathedb.lathe import Lathe
+from pylathedb.evaluation import EvaluationHandler
 
 config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
@@ -38,9 +38,9 @@ for approach in approaches:
                 preprocessed_results = {}
 
             config = ConfigHandler(reset = True,queryset_config_filepath=qsconfig_filepath)
-            mapper = Mapper()
+            lathe = Lathe()
             evaluation_handler = EvaluationHandler()
-            mapper.load_queryset()                
+            lathe.get_queryset()                
             evaluation_handler.load_golden_standards()
 
             print(f"Running queryset {config.queryset_name} with {approach} approach")
@@ -53,7 +53,7 @@ for approach in approaches:
                 print(f'Skipped {results_filepath}')
                 continue
 
-            results = mapper.run_queryset(
+            results = lathe.run_queryset(
                 preprocessed_results = preprocessed_results,
                 weight_scheme=weight_scheme,
                 max_num_query_matches=max_num_query_matches,

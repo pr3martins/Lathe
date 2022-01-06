@@ -1,8 +1,8 @@
 from random import sample
 import json
 
-from k2db.keyword_match import KeywordMatch
-from k2db.utils import get_logger
+from pylathedb.keyword_match import KeywordMatch
+from pylathedb.utils import get_logger
 
 '''
 Query match is a set of tuple-sets that, if properly joined,

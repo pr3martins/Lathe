@@ -1,7 +1,9 @@
 import shelve
 from random import sample
+from os import makedirs
+from os.path import dirname
 
-from k2db.utils import get_logger,calculate_tf,calculate_iaf,calculate_inverse_frequency
+from pylathedb.utils import get_logger,calculate_tf,calculate_iaf,calculate_inverse_frequency
 
 from .babel_hash import BabelHash
 
@@ -98,6 +100,7 @@ class ValueIndex():
         return f'<ValueIndex {repr(self._dict)}>'
 
     def persist_to_file(self,filename):
+        makedirs(dirname(filename), exist_ok=True)
         with shelve.open(filename) as storage:
             storage['__babel__']=BabelHash.babel
             for key,underlying_value in self._dict.items():

@@ -3,10 +3,6 @@ from string import punctuation,ascii_uppercase,ascii_lowercase
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-from .config_handler import ConfigHandler
-from .logger import get_logger
-
-logger = get_logger(__name__)
 class Tokenizer:
     stop_words = set(stopwords.words('english'))-{'will'}
     re_spaces = re.compile(r'\s+')
@@ -15,7 +11,6 @@ class Tokenizer:
 
     def __init__(self, **kwargs):
         self.tokenize_method = kwargs.get('tokenize_method','simple')
-        self.config = ConfigHandler()
 
     def compound_keywords(self,keyword_query):
         return [self.tokenize(segment) for segment in keyword_query.split('"')[1::2]]

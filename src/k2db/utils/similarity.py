@@ -1,14 +1,8 @@
 import itertools
 from nltk.corpus import wordnet as wn
 
-from .config_handler import ConfigHandler
-from .logger import get_logger
-
-logger = get_logger(__name__)
 class Similarity:
     def __init__(self, schema_index, **kwargs):
-
-        self.config = ConfigHandler()
         self.schema_index = schema_index
 
         self.use_path_sim=kwargs.get('use_path_sim',True)

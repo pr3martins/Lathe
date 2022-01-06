@@ -2,8 +2,8 @@ import json
 from collections import Counter  #used to check whether two CandidateNetworks are equal
 from queue import deque
 
-from k2db.keyword_match import KeywordMatch
-from k2db.utils import Graph
+from pylathedb.keyword_match import KeywordMatch
+from pylathedb.utils import Graph
 
 class CandidateNetwork(Graph):
 
@@ -30,17 +30,17 @@ class CandidateNetwork(Graph):
                 return vertex
             else:
                 return None
-        else:         
+        else:
             for candidate in self.vertices():
                 keyword_match,_ = candidate
                 if not keyword_match.is_free():
                     self.__root = candidate
                     return candidate
-        
+
         print('The root of a Candidate Network cannot be a Keyword-Free Match.')
         print(self)
         raise ValueError('The root of a Candidate Network cannot be a Keyword-Free Match.')
-        
+
         # return None
 
     def get_starting_vertex(self):
@@ -59,7 +59,7 @@ class CandidateNetwork(Graph):
     #             break
     #     return vertex
 
-        
+
     def add_vertex(self, vertex):
         results = super().add_vertex(vertex)
         if self.__root is None:
@@ -97,7 +97,7 @@ class CandidateNetwork(Graph):
         '''
         This function iterates over incoming neighbors which, in practice,
         also behaves like an outgoing neighbor. That is, the foreign key
-        is unique (not explicitly), which sugests a cardinality of 1:1 
+        is unique (not explicitly), which sugests a cardinality of 1:1
         between the two tables.
         '''
         keyword_match,_ = vertex
@@ -107,11 +107,11 @@ class CandidateNetwork(Graph):
             edge_info = schema_graph.get_edge_info(
                 neighbor_km.table,
                 keyword_match.table
-            )            
+            )
             for _,(cardinality,_) in edge_info.items():
                 if cardinality=='1:1':
                     yield neighbor_vertex
-        
+
 
     def is_sound(self,schema_graph):
         if len(self) < 3:
@@ -190,7 +190,7 @@ class CandidateNetwork(Graph):
 
         if not isinstance(other,CandidateNetwork):
             return False
-        
+
         self_root_km,_  = self.__root
         # if other.get_root() is None:
         #     print(f'OTHER ROOT IS NONE')
@@ -202,13 +202,13 @@ class CandidateNetwork(Graph):
 
         if self_root_km==other_root_km:
             other_hash = hash(other)
-        else:            
+        else:
             for keyword_match,alias in other.vertices():
                 if self_root_km == keyword_match:
                     root = (keyword_match,alias)
                     # print(f'Root: {root}')
                     other_hash = other.hash_from_root(root)
-        
+
         if other_hash is None:
             return False
 
@@ -221,13 +221,13 @@ class CandidateNetwork(Graph):
             return hash(None)
         if self.__root is None:
             self.set_root()
-        return self.hash_from_root(self.__root)   
+        return self.hash_from_root(self.__root)
 
 
     def hash_from_root(self,root):
         hashable = []
 
-        level = 0       
+        level = 0
         visited = set()
 
         queue = deque()
@@ -238,20 +238,20 @@ class CandidateNetwork(Graph):
             keyword_match,alias = vertex
             children = Counter()
             visited.add(alias)
-            
+
             for adj_vertex in self.neighbors(vertex):
                 adj_km,adj_alias = adj_vertex
                 if adj_alias not in visited:
                     queue.append( (level+1,adj_vertex) )
                     children[adj_km]+=1
-                
+
             if len(hashable)<level+1:
                 hashable.append(set())
-            
+
             hashable[level].add( (keyword_match,frozenset(children.items())) )
 
         hashcode = hash(tuple(frozenset(items) for items in hashable))
-        return hashcode   
+        return hashcode
 
     def __repr__(self):
         if len(self)==0:
@@ -297,7 +297,8 @@ class CandidateNetwork(Graph):
     def get_sql_from_cn(self,schema_graph,**kwargs):
         rows_limit=kwargs.get('rows_limit',1000)
         show_evaluation_fields=kwargs.get('show_evaluation_fields',False)
-        
+        tsvector_field_suffix=kwargs.get('tsvector_field_suffix','_tsvector')
+
         hashtables = {} # used for disambiguation
         used_fks = {}
 
@@ -310,15 +311,39 @@ class CandidateNetwork(Graph):
         tables__search_id = []
         relationships__search_id = []
 
+
+        def get_column_type(table,attribute):
+            # TODO: Handle attributes from the "varchar"  domain
+            # but do not have to be indexed
+            # if table == 'title' and attribute == 'production_year':
+            #     return 'integer'
+            # if table == 'organization' and attribute=='abbreviation':
+            #     return 'varchar'
+            return 'fulltext_indexed'
+
         for prev_vertex,direction,vertex in self.dfs_pair_iter(root_predecessor=True):
             keyword_match, alias = vertex
             for type_km, _ ,attribute,keywords in keyword_match.mappings():
                 selected_attributes.add(f'{alias}.{attribute}')
+                sql_keywords = [keyword.replace('\'','\'\'') for keyword in keywords]
+
                 if type_km == 'v':
-                    for keyword in keywords:
-                        sql_keyword = keyword.replace('\'','\'\'')
-                        condition = f"CAST({alias}.{attribute} AS VARCHAR) ILIKE \'%{sql_keyword}%\'"
+
+                    column_type=get_column_type(keyword_match.table,attribute)
+
+
+                    if column_type == 'fulltext_indexed':
+                        condition = f"{alias}.{attribute}{tsvector_field_suffix} @@ to_tsquery(\'{ ' & '.join(sql_keywords) }\')"
                         filter_conditions.append(condition)
+                    else:
+                        for sql_keyword in sql_keywords:
+                            if column_type == 'varchar':
+                                condition = f"{alias}.{attribute} ILIKE \'%{sql_keyword}%\'"
+                            elif column_type == 'integer':
+                                condition = f"{alias}.{attribute} = {sql_keyword}"
+                            else:
+                                condition = f"CAST({alias}.{attribute} AS VARCHAR) ILIKE \'%{sql_keyword}%\'"
+                            filter_conditions.append(condition)
 
             hashtables.setdefault(keyword_match.table,[]).append(alias)
 
@@ -339,14 +364,14 @@ class CandidateNetwork(Graph):
 
                 edge_info = schema_graph.get_edge_info(constraint_keyword_match.table,
                                             foreign_keyword_match.table)
-                
+
                 for constraint in edge_info:
                     if constraint not in used_fks.setdefault(constraint_alias,[]):
                         used_fks[constraint_alias].append(constraint)
 
                         _,attribute_mappings = edge_info[constraint]
 
-                        join_conditions = []                  
+                        join_conditions = []
                         for (constraint_column,foreign_column) in attribute_mappings:
                             join_conditions.append(
                                 f'{constraint_alias}.{constraint_column} = {foreign_alias}.{foreign_column}'
@@ -354,7 +379,7 @@ class CandidateNetwork(Graph):
                         txt_join_conditions = '\n\t\tAND '.join(join_conditions)
                         selected_tables.append(f'JOIN {keyword_match.table} {alias} ON {txt_join_conditions}')
                         break
-                    
+
                 if show_evaluation_fields:
                     relationships__search_id.append(f'({alias}.__search_id, {prev_alias}.__search_id)')
 

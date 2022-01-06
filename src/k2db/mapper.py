@@ -1,40 +1,55 @@
 import json
 from timeit import default_timer as timer
 
-from k2db.utils import ConfigHandler, Similarity, get_logger, Tokenizer, next_path
-from k2db.index import IndexHandler
-from k2db.database import DatabaseHandler
-from k2db.keyword_match import KeywordMatchHandler
-from k2db.query_match import QueryMatchHandler
-from k2db.candidate_network import CandidateNetworkHandler
-from k2db.evaluation import EvaluationHandler
+from pylathedb.utils import ConfigHandler, Similarity, get_logger, Tokenizer, next_path,LatheResult
+from pylathedb.index import IndexHandler
+from pylathedb.database import DatabaseHandler
+from pylathedb.keyword_match import KeywordMatchHandler
+from pylathedb.query_match import QueryMatchHandler
+from pylathedb.candidate_network import CandidateNetworkHandler
+from pylathedb.evaluation import EvaluationHandler
 
 
 logger = get_logger(__name__)
-class Mapper:
-    def __init__(self, config = None):
-        self.config = config
-        if self.config is None:
-            self.config = ConfigHandler()
+class Lathe:
+    def __init__(self, **kwargs):
+        config_directory = kwargs.get('config_directory','../config/')
+        self.config = kwargs.get(
+            'config',
+            ConfigHandler(config_directory=config_directory)
+        )
 
-        self.database_handler = DatabaseHandler()
-        self.index_handler = IndexHandler(database_handler = self.database_handler)
+        self.max_qm_size = 3
+        self.max_cjn_size = 5
+        self.topk_cns = 5
+        self.configuration = (5,1,9)
+
+        self.database_handler = DatabaseHandler(self.config)
+        self.index_handler = IndexHandler(self.config,database_handler = self.database_handler)
 
         self.tokenizer = Tokenizer(tokenize_method = 'simple')
-        self.index_handler.load_indexes()
+        # self.index_handler.load_indexes()
         # print(f'SCHEMA GRAPH:\n{self.index_handler.schema_graph.str_edges_info()}')
 
         self.similarity = Similarity(self.index_handler.schema_index)
         self.keyword_match_handler = KeywordMatchHandler(self.similarity)
         self.query_match_handler = QueryMatchHandler()
-        self.evaluation_handler = EvaluationHandler()
-        self.candidate_network_handler = CandidateNetworkHandler(database_handler = self.database_handler)
+        self.evaluation_handler = EvaluationHandler(self.config)
+        self.candidate_network_handler = CandidateNetworkHandler(self.database_handler)
         self.evaluation_handler.load_golden_standards()
+
+        self._queryset=None
 
     def load_queryset(self):
         with open(self.config.queryset_filepath,mode='r') as f:
             queryset = json.load(f)
-        self.queryset = queryset
+        self._queryset = queryset
+
+    def get_queryset(self,reload=False):
+        if self._queryset is None or reload:
+            with open(self.config.queryset_filepath,mode='r') as f:
+                self._queryset = json.load(f)
+        return self._queryset
 
     def run_queryset(self,**kwargs):
         '''
@@ -48,11 +63,11 @@ class Mapper:
 
         results =[]
 
-        keywords_to_load = {keyword for item in self.queryset for keyword in set(self.tokenizer.keywords(item['keyword_query']))}
+        keywords_to_load = {keyword for item in self.get_queryset() for keyword in set(self.tokenizer.keywords(item['keyword_query']))}
 
         self.index_handler.load_indexes(keywords = keywords_to_load)
 
-        for item in self.queryset:
+        for item in self.get_queryset():
             keyword_query = item['keyword_query']
 
             print(f'Running keyword search for query: {keyword_query}')
@@ -79,15 +94,29 @@ class Mapper:
 
         return data
 
+    def keyword_search(self,keyword_query=None,**kwargs):
+        max_qm_size=kwargs.get('max_qm_size', self.max_qm_size)
+        max_cjn_size=kwargs.get('max_cjn_size',self.max_cjn_size )
+        topk_cns=kwargs.get('topk_cns', self.topk_cns)
+        configuration = kwargs.get('configuration', self.configuration)
 
-    def keyword_search(self,keyword_query,**kwargs):
+        
+        max_num_query_matches,topk_cns_per_qm,max_database_accesses = configuration  
+        kwargs['max_database_accesses']=max_database_accesses
+        kwargs['instance_based_pruning'] = (max_database_accesses>0)
+        kwargs['max_num_query_matches']=max_num_query_matches
+        kwargs['topk_cns_per_qm']=topk_cns_per_qm
+        kwargs['weight_scheme'] = 0
+
         repeat = kwargs.get('repeat',1)
         assume_golden_qms = kwargs.get('assume_golden_qms',False)
-        max_num_query_matches = kwargs.get('max_num_query_matches',5)
+        
         input_desired_cn = kwargs.get('input_desired_cn',False)
         skip_cn_generations = kwargs.get('skip_cn_generations',False)
+        show_kms_in_result = kwargs.get('show_kms_in_result',True)
+        use_result_class = kwargs.get('use_result_class',True)
 
-        weight_scheme = kwargs.get('weight_scheme',3)
+        weight_scheme = kwargs.get('weight_scheme',0)
         #preventing to send multiple values for weight_scheme
         if 'weight_scheme' in kwargs:
             del kwargs['weight_scheme']
@@ -100,14 +129,27 @@ class Mapper:
             'cn':[],
             'total':[],
         }
+
+        if keyword_query is None:
+            print(f'Please input a keyword query or choose one of the queries below:')
+            for i,item in enumerate(self.get_queryset()):
+                keyword_query = item['keyword_query']
+                print(f'{i+1:02d} - {keyword_query}')
+            return None
+        if isinstance(keyword_query, int):
+            keyword_query=self.get_queryset()[keyword_query]['keyword_query']
+
+        print(f'query: {keyword_query}')
         keywords =  self.tokenizer.keywords(keyword_query)
 
         for _ in range(repeat):
+            
             if not assume_golden_qms:
                 start_skm_time = timer()
+                
                 sk_matches = self.keyword_match_handler.schema_keyword_match_generator(keywords, self.index_handler.schema_index)
                 logger.info('%d SKMs generated: %s',len(sk_matches),sk_matches)
-
+                
                 start_vkm_time = timer()
                 vk_matches = self.keyword_match_handler.value_keyword_match_generator(keywords, self.index_handler.value_index)
                 # vk_matches = self.keyword_match_handler.filter_kwmatches_by_compound_keywords(vk_matches,compound_keywords)
@@ -124,6 +166,7 @@ class Mapper:
                 kw_matches = []
                 query_matches = self.evaluation_handler.golden_standards[keyword_query]['query_matches']
 
+            
             ranked_query_matches = self.query_match_handler.rank_query_matches(query_matches,
                 self.index_handler.value_index,
                 self.index_handler.schema_index,
@@ -182,4 +225,20 @@ class Mapper:
             'num_candidate_networks':  len(ranked_cns),
         }
 
+        if show_kms_in_result:
+            result['value_keyword_matches'] = [vkm.to_json_serializable() for vkm in vk_matches]
+            result['schema_keyword_matches']= [skm.to_json_serializable() for skm in sk_matches]
+
+        if use_result_class:
+            return LatheResult(self.index_handler,self.database_handler,result)
+
         return result
+
+    def change_queryset(self,ans=None):
+        return self.config.change_queryset(ans)
+
+    def create_indexes(self):
+        self.index_handler.create_indexes()
+
+    def load_indexes(self):
+        self.index_handler.load_indexes()

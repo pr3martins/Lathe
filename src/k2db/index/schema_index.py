@@ -1,7 +1,9 @@
 import shelve
 from copy import deepcopy
+from os import makedirs
+from os.path import dirname
 
-from k2db.utils import get_logger
+from pylathedb.utils import get_logger
 
 logger = get_logger(__file__)
 class SchemaIndex():
@@ -47,6 +49,7 @@ class SchemaIndex():
         return sum([len(attribute) for attribute in self.values()])
 
     def persist_to_file(self,filename):
+        makedirs(dirname(filename), exist_ok=True)
         with shelve.open(filename) as storage:
             for key,value in self._dict.items():
                 storage[key]=value

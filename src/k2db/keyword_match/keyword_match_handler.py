@@ -1,15 +1,14 @@
 import itertools
 import re
 
-from k2db.utils import ConfigHandler,get_logger
-from k2db.utils import Similarity
+from pylathedb.utils import ConfigHandler,get_logger
+from pylathedb.utils import Similarity
 
 from .keyword_match import KeywordMatch
 
 logger = get_logger(__name__)
 class KeywordMatchHandler:
     def __init__(self, similarity):
-        self.config = ConfigHandler()
         self.similarities = similarity
 
     def get_keyword_matches(self, keywords, value_index, schema_index,**kwargs):
@@ -18,7 +17,6 @@ class KeywordMatchHandler:
         return sk_matches+vk_matches
 
     def value_keyword_match_generator(self, Q,value_index,**kwargs):
-
         ignored_tables = kwargs.get('ignored_tables',[])
         ignored_attributes = kwargs.get('ignored_attributes',[])
 

@@ -1,12 +1,15 @@
 import  itertools
-from k2db.utils import get_logger
-from k2db.keyword_match import KeywordMatch
+from pylathedb.utils import get_logger
+from pylathedb.keyword_match import KeywordMatch
 
 from .query_match import QueryMatch
 
 logger = get_logger(__name__)
 
 class QueryMatchHandler:
+
+    def __init__(self):
+        return 
 
     def generate_query_matches(self, keywords,keyword_matches, **kwargs):
         #Input:  A keyword query Q, The set of non-empty non-free tuple-sets Rq

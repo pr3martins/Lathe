@@ -1,6 +1,8 @@
 import pickle
+from os import makedirs
+from os.path import dirname
 
-from k2db.utils import Graph
+from pylathedb.utils import Graph
 
 class SchemaGraph(Graph):
     def __init__(self, graph_dict=None,edges_info = None):
@@ -25,6 +27,7 @@ class SchemaGraph(Graph):
 
     def persist_to_file(self,filename):
         data = (self._graph_dict,self._edges_info)
+        makedirs(dirname(filename), exist_ok=True)
         with open(filename,mode='wb') as f:
             pickle.dump(data,f)
 

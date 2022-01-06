@@ -2,16 +2,17 @@ import psycopg2
 from psycopg2.sql import SQL, Identifier
 from prettytable import PrettyTable
 from itertools import groupby
+import pandas as pd
 
-from k2db.utils import ConfigHandler,get_logger
+from pylathedb.utils import ConfigHandler,get_logger
 
 from .database_iter import DatabaseIter
 
 logger = get_logger(__name__)
 
 class DatabaseHandler:
-    def __init__(self):
-        self.config = ConfigHandler()
+    def __init__(self,config):
+        self.config = config
 
     def get_tables_and_attributes(self):
         with psycopg2.connect(**self.config.connection) as conn:
@@ -31,7 +32,7 @@ class DatabaseHandler:
 
     def iterate_over_keywords(self,schema_index,**kwargs):
         database_table_columns=schema_index.tables_attributes()
-        return DatabaseIter(database_table_columns,**kwargs)
+        return DatabaseIter(self.config,database_table_columns,**kwargs)
 
     def get_fk_constraints(self):
         with psycopg2.connect(**self.config.connection) as conn:
@@ -105,9 +106,13 @@ class DatabaseHandler:
                     raise
                 return table
 
+    def get_dataframe(self,sql,**kwargs):
+        with psycopg2.connect(**self.config.connection) as conn:
+            df=pd.read_sql(sql,conn)
+            return df
+
     def exist_results(self,sql):
         sql = f"SELECT EXISTS ({sql.rstrip(';')});"
-
         with psycopg2.connect(**self.config.connection) as conn:
             with conn.cursor() as cur:
                 try:

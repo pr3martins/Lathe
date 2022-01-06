@@ -5,9 +5,11 @@ from contextlib import ExitStack
 import json
 from pprint import pprint as pp
 from math import log
+from os.path import exists
+from os import remove
 
-from k2db.utils import ConfigHandler,get_logger,memory_size,calculate_tf,calculate_inverse_frequency,calculate_iaf
-from k2db.database import DatabaseHandler
+from pylathedb.utils import ConfigHandler,get_logger,memory_size,calculate_tf,calculate_inverse_frequency,calculate_iaf
+from pylathedb.database import DatabaseHandler
 
 from .value_index import ValueIndex
 from .schema_index import SchemaIndex
@@ -17,12 +19,14 @@ import sys
 logger = get_logger(__name__)
 
 class IndexHandler:
-    def __init__(self, **kwargs):
-        self.config = kwargs.get('config',ConfigHandler())
+    def __init__(self, config,**kwargs):
+        self.config = config
+        self.database_handler = kwargs.get('database_handler',DatabaseHandler(self.config))
+        
         self.value_index = ValueIndex()
         self.schema_index = SchemaIndex()
         self.schema_graph = SchemaGraph()
-        self.database_handler = kwargs.get('database_handler',DatabaseHandler())
+        
         self.partial_index_count=0
 
     def create_indexes(self):
@@ -32,9 +36,11 @@ class IndexHandler:
 
         self.create_schema_graph()
         self.create_partial_schema_index()
+        self.remove_partial_value_indexes()
         self.create_partial_value_indexes()
         self.merge_partial_value_indexes_and_process_max_frequency()
         self.process_norms()
+        self.remove_partial_value_indexes()
 
     def create_schema_graph(self):
         #TODO considerar custom fk constraints
@@ -90,6 +96,15 @@ class IndexHandler:
 
         part_index()
 
+    def remove_partial_value_indexes(self):
+        filenames=glob(f'{self.config.value_index_filepath}.part*')
+        for filename in filenames:
+            if exists(filename):
+                remove(filename)
+            else:
+                print(f"The file {filename} does not exist.") 
+
+
     def merge_partial_value_indexes_and_process_max_frequency(self):
         '''    return '\n'.join(print_string)
 
@@ -107,8 +122,8 @@ class IndexHandler:
 
         filenames=glob(f'{self.config.value_index_filepath}.part*')
         with ExitStack() as stack:
-            partial_value_indexes = [stack.enter_context(shelve.open(fname,flag='r')) for fname in filenames]
-            final_value_index = stack.enter_context(shelve.open(f'{self.config.value_index_filepath}'))
+            partial_value_indexes = [stack.enter_context(shelve.open(fname.replace('.db', ''),flag='r')) for fname in filenames]
+            final_value_index = stack.enter_context(shelve.open(f'{self.config.value_index_filepath.replace(".db", "")}',flag='n'))
 
             for partial_value_index in partial_value_indexes:
                 babel.update(partial_value_index['__babel__'])
