@@ -1,5 +1,5 @@
-from k2db.utils import ConfigHandler
-from k2db.index import IndexHandler
+from pylathedb.utils import ConfigHandler
+from pylathedb.index import IndexHandler
 
 datasets = ['mondial','imdb_renamed','imdb_coffman']
 for dataset in datasets:

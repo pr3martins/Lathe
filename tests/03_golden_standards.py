@@ -1,13 +1,13 @@
-from k2db.evaluation import EvaluationHandler
-from k2db.utils import ConfigHandler
-from k2db.index import IndexHandler
-from k2db.database import DatabaseHandler
+from pylathedb.evaluation import EvaluationHandler
+from pylathedb.utils import ConfigHandler
+from pylathedb.index import IndexHandler
+from pylathedb.database import DatabaseHandler
 
 config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
 queryset_configs.sort()
 
-for name,filepath in queryset_configs[0:1]:
+for name,filepath in queryset_configs:
     print(f'Queryset:{name}')
     config = ConfigHandler(reset=True,queryset_config_filepath=filepath)
     evaluation_handler = EvaluationHandler()

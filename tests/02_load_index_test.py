@@ -1,7 +1,7 @@
 from pprint import pprint as pp
 
-from k2db.utils import ConfigHandler
-from k2db.index import IndexHandler
+from pylathedb.utils import ConfigHandler
+from pylathedb.index import IndexHandler
 
 datasets = ['imdb_renamed','imdb_coffman','mondial']
 sample_size = 100
@@ -27,4 +27,6 @@ for dataset in datasets:
     print(list(indexHandler.value_index.keys()))
 
 
+    num_attr = sum([len(attributes) for table,attributes in indexHandler.schema_index.items()])
+    print(f'num_attr {num_attr}')
     print('#'*100)
