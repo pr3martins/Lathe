@@ -101,8 +101,8 @@ class DatabaseHandler:
                             table.add_row(row)
                     if show_results:
                         print(table)
-                except:
-                    print('ERRO SQL:\n',sql)
+                except Exception as e:
+                    print(e)
                     raise
                 return table
 
@@ -118,7 +118,7 @@ class DatabaseHandler:
                 try:
                     cur.execute(sql)
                     return cur.fetchone()[0]
-                except:
-                    print('ERRO SQL:\n',sql)
+                except Exception as e:
+                    print(e)
                     return False
         return None

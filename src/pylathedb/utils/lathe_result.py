@@ -75,7 +75,7 @@ class LatheResult():
             printmd('---')
             printmd(f'**{ordinal(i+1)} QM**:')
             printmd('---')
-            print(qm,end='\n\n')
+            print(qm,end='\n')
 
             if i+1>=top_k and top_k>0:
                 break
@@ -86,7 +86,6 @@ class LatheResult():
         top_k=kwargs.get('top_k',0)
 
         self.skms(top_k=top_k)
-        print('\n')
         self.vkms(top_k=top_k)
         
     def skms(self,**kwargs):

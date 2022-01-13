@@ -25,7 +25,7 @@ class Lathe:
         self.configuration = (5,1,9)
 
         self.database_handler = DatabaseHandler(self.config)
-        self.index_handler = IndexHandler(self.config,database_handler = self.database_handler)
+        self.index_handler = IndexHandler(self.config, self.database_handler)
 
         self.tokenizer = Tokenizer(tokenize_method = 'simple')
         # self.index_handler.load_indexes()
@@ -37,6 +37,7 @@ class Lathe:
         self.evaluation_handler = EvaluationHandler(self.config)
         self.candidate_network_handler = CandidateNetworkHandler(self.database_handler)
         self.evaluation_handler.load_golden_standards()
+
 
         self._queryset=None
 
@@ -137,9 +138,9 @@ class Lathe:
                 print(f'{i+1:02d} - {keyword_query}')
             return None
         if isinstance(keyword_query, int):
-            keyword_query=self.get_queryset()[keyword_query]['keyword_query']
+            keyword_query=self.get_queryset()[keyword_query-1]['keyword_query']
 
-        print(f'query: {keyword_query}')
+        print(f'Keyword Query: {keyword_query}')
         keywords =  self.tokenizer.keywords(keyword_query)
 
         for _ in range(repeat):
@@ -235,6 +236,7 @@ class Lathe:
         return result
 
     def change_queryset(self,ans=None):
+        self._queryset=None
         return self.config.change_queryset(ans)
 
     def create_indexes(self):
