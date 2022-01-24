@@ -63,7 +63,7 @@ class IndexHandler:
                 ]
         else:
             print('Get table_attributes from database')
-            tables_attributes = self.database_handler.get_tables_and_attributes()
+            tables_attributes = list(self.database_handler.get_tables_and_attributes().items())
 
         metrics = {'max_frequency':0, 'norm':[0,0,0,0]}
         self.schema_index.create_entries(tables_attributes,metrics)

@@ -24,10 +24,10 @@ class DatabaseHandler:
                         ORDER by 1,2;
                         '''
                 cur.execute(sql)
-        tables_attributes = {
-            table:[attribute for table,attribute in group]
-            for table,group in groupby(cur.fetchall(),lambda x:x[0])
-        }
+                tables_attributes = {
+                    table:[attribute for table,attribute in group]
+                    for table,group in groupby(cur.fetchall(),lambda x:x[0])
+                }
         return tables_attributes        
 
     def iterate_over_keywords(self,schema_index,**kwargs):
