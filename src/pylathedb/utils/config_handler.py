@@ -95,7 +95,7 @@ class ConfigHandler:
         if isinstance(ans, int):
             name,path = self.get_queryset_configs()[ans-1]
         else:
-            path = config_directory+ans
+            path = f'{config_directory}{ans}_config.json'
         print(path)
         previous_database = self.connection['database']
         
