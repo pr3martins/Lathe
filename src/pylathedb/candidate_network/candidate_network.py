@@ -394,9 +394,17 @@ class CandidateNetwork(Graph):
             txt_relationships = ', '.join(relationships__search_id)
             relationships__search_id = [f'({txt_relationships}) AS Relationships']
 
-        sql_text = '\nSELECT\n\t{}\nFROM\n\t{}\nWHERE\n\t{}\nLIMIT {};'.format(
+        where_conditions = disambiguation_conditions+filter_conditions
+        if len(where_conditions)>0:
+            where_clause = 'WHERE\n{}'.format(
+                '\n\tAND '.join(where_conditions) 
+            )
+        else:
+            where_clause= ''
+
+        sql_text = '\nSELECT\n\t{}\nFROM\n\t{}\n{}\t{}\nLIMIT {};'.format(
             ',\n\t'.join( tables__search_id+relationships__search_id+list(selected_attributes) ),
-            '\n\t'.join(selected_tables),
-            '\n\tAND '.join( disambiguation_conditions+filter_conditions),
+            '\n\t'.join([f'"{table}"' for table in selected_tables]),
+            where_clause,
             rows_limit)
         return sql_text
