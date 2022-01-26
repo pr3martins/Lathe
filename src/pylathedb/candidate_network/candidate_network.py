@@ -396,13 +396,13 @@ class CandidateNetwork(Graph):
 
         where_conditions = disambiguation_conditions+filter_conditions
         if len(where_conditions)>0:
-            where_clause = 'WHERE\n{}'.format(
+            where_clause = 'WHERE\n\t{}'.format(
                 '\n\tAND '.join(where_conditions) 
             )
         else:
             where_clause= ''
 
-        sql_text = '\nSELECT\n\t{}\nFROM\n\t{}\n{}\t{}\nLIMIT {};'.format(
+        sql_text = '\nSELECT\n\t{}\nFROM\n\t{}\n{}\nLIMIT {};'.format(
             ',\n\t'.join( tables__search_id+relationships__search_id+list(selected_attributes) ),
             '\n\t'.join([f'"{table}"' for table in selected_tables]),
             where_clause,
