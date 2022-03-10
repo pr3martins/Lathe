@@ -351,7 +351,7 @@ class CandidateNetwork(Graph):
                 tables__search_id.append(f'{alias}.__search_id')
 
             if prev_vertex is None:
-                selected_tables.append(f'{keyword_match.table} {alias}')
+                selected_tables.append(f'"{keyword_match.table}" {alias}')
             else:
                 # After the second table, it starts to use the JOIN syntax
                 _ ,prev_alias = prev_vertex
@@ -377,7 +377,7 @@ class CandidateNetwork(Graph):
                                 f'{constraint_alias}.{constraint_column} = {foreign_alias}.{foreign_column}'
                             )
                         txt_join_conditions = '\n\t\tAND '.join(join_conditions)
-                        selected_tables.append(f'JOIN {keyword_match.table} {alias} ON {txt_join_conditions}')
+                        selected_tables.append(f'JOIN "{keyword_match.table}" {alias} ON {txt_join_conditions}')
                         break
 
                 if show_evaluation_fields:
@@ -394,9 +394,17 @@ class CandidateNetwork(Graph):
             txt_relationships = ', '.join(relationships__search_id)
             relationships__search_id = [f'({txt_relationships}) AS Relationships']
 
-        sql_text = '\nSELECT\n\t{}\nFROM\n\t{}\nWHERE\n\t{}\nLIMIT {};'.format(
+        where_conditions = disambiguation_conditions+filter_conditions
+        if len(where_conditions)>0:
+            where_clause = 'WHERE\n\t{}'.format(
+                '\n\tAND '.join(where_conditions) 
+            )
+        else:
+            where_clause= ''
+
+        sql_text = '\nSELECT\n\t{}\nFROM\n\t{}\n{}\nLIMIT {};'.format(
             ',\n\t'.join( tables__search_id+relationships__search_id+list(selected_attributes) ),
             '\n\t'.join(selected_tables),
-            '\n\tAND '.join( disambiguation_conditions+filter_conditions),
+            where_clause,
             rows_limit)
         return sql_text
