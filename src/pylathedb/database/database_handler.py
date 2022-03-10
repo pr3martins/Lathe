@@ -24,10 +24,10 @@ class DatabaseHandler:
                         ORDER by 1,2;
                         '''
                 cur.execute(sql)
-        tables_attributes = {
-            table:[attribute for table,attribute in group]
-            for table,group in groupby(cur.fetchall(),lambda x:x[0])
-        }
+                tables_attributes = {
+                    table:[attribute for table,attribute in group]
+                    for table,group in groupby(cur.fetchall(),lambda x:x[0])
+                }
         return tables_attributes        
 
     def iterate_over_keywords(self,schema_index,**kwargs):
@@ -101,8 +101,8 @@ class DatabaseHandler:
                             table.add_row(row)
                     if show_results:
                         print(table)
-                except:
-                    print('ERRO SQL:\n',sql)
+                except Exception as e:
+                    print(e)
                     raise
                 return table
 
@@ -118,7 +118,7 @@ class DatabaseHandler:
                 try:
                     cur.execute(sql)
                     return cur.fetchone()[0]
-                except:
-                    print('ERRO SQL:\n',sql)
+                except Exception as e:
+                    print(e)
                     return False
         return None

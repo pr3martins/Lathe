@@ -15,7 +15,7 @@ class LatheResult():
         self.data = data
 
     def cjns(self,**kwargs):
-        show_str=kwargs.get('show_str',kwargs.get('text',False))
+        show_str=kwargs.get('show_str',kwargs.get('text',True))
         show_graph=kwargs.get('show_graph',kwargs.get('graph',True))
         show_sql=kwargs.get('show_sql',kwargs.get('sql',True))
         show_df=kwargs.get('show_df',kwargs.get('df',kwargs.get('jnts',True)))
@@ -26,7 +26,7 @@ class LatheResult():
             cjn=CandidateNetwork.from_json_serializable(json_cn)
             printmd('---')
             printmd(f'**{ordinal(i+1)} CJN**:')
-            
+
             if show_str:
                 printmd('---')
                 print(f'Text:\n{shift_tab(cjn)}')
@@ -75,20 +75,19 @@ class LatheResult():
             printmd('---')
             printmd(f'**{ordinal(i+1)} QM**:')
             printmd('---')
-            print(qm,end='\n\n')
+            print(qm,end='\n')
 
             if i+1>=top_k and top_k>0:
                 break
-    
+
     def kms(self,**kwargs):
-        show_skms=kwargs.get('show_skms',True)
-        show_vkms=kwargs.get('show_vkms',True)
+        show_skms=kwargs.get('schema',True)
+        show_vkms=kwargs.get('value',True)
         top_k=kwargs.get('top_k',0)
 
         self.skms(top_k=top_k)
-        print('\n')
         self.vkms(top_k=top_k)
-        
+
     def skms(self,**kwargs):
         top_k=kwargs.get('top_k',0)
         printmd('---')
@@ -104,7 +103,7 @@ class LatheResult():
             print(km)
             if i+1>=top_k and top_k>0:
                 break
-                
+
     def vkms(self,**kwargs):
         top_k=kwargs.get('top_k',0)
         printmd('---')

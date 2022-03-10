@@ -19,9 +19,9 @@ import sys
 logger = get_logger(__name__)
 
 class IndexHandler:
-    def __init__(self, config,**kwargs):
+    def __init__(self, config,database_handler):
         self.config = config
-        self.database_handler = kwargs.get('database_handler',DatabaseHandler(self.config))
+        self.database_handler = database_handler
         
         self.value_index = ValueIndex()
         self.schema_index = SchemaIndex()
@@ -63,7 +63,7 @@ class IndexHandler:
                 ]
         else:
             print('Get table_attributes from database')
-            tables_attributes = self.database_handler.get_tables_and_attributes()
+            tables_attributes = list(self.database_handler.get_tables_and_attributes().items())
 
         metrics = {'max_frequency':0, 'norm':[0,0,0,0]}
         self.schema_index.create_entries(tables_attributes,metrics)
