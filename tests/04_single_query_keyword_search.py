@@ -1,10 +1,10 @@
 import json
 
-from k2db.mapper import Mapper
-from k2db.utils import ConfigHandler, truncate
-from k2db.evaluation import EvaluationHandler
-from k2db.query_match import QueryMatch
-from k2db.candidate_network import CandidateNetwork
+from pylathedb.lathe import Lathe
+from pylathedb.utils import ConfigHandler, truncate
+from pylathedb.evaluation import EvaluationHandler
+from pylathedb.query_match import QueryMatch
+from pylathedb.candidate_network import CandidateNetwork
 
 config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
@@ -19,11 +19,11 @@ ans = int(input())
 _ , queryset_config_filepath = queryset_configs[ans-1]
 config = ConfigHandler(reset=True,queryset_config_filepath=queryset_config_filepath)
 
-mapper = Mapper()
-mapper.load_queryset()
+lathe = Lathe()
+lathe.get_queryset()
 
 print('\nChoose a keyword query from the list:\n')
-for i,item in enumerate(mapper.queryset):
+for i,item in enumerate(lathe.get_queryset()):
     keyword_query = item['keyword_query']
     print(f'{i+1:02d} - {truncate(keyword_query)}')
 
@@ -39,11 +39,11 @@ topk_cns_per_qm = 2
 max_num_query_matches = 5
 weight_scheme = 0
 
-keyword_query = mapper.queryset[ans-1]['keyword_query']
+keyword_query = lathe.get_queryset()[ans-1]['keyword_query']
 # keyword_query='kuwait saudi arabia'
 
 
-results_for_query = mapper.keyword_search(
+results_for_query = lathe.keyword_search(
     keyword_query,
     max_num_query_matches=max_num_query_matches,
     topk_cns_per_qm = topk_cns_per_qm,
@@ -80,7 +80,7 @@ for i,json_serializable_qm in enumerate(results_for_query['query_matches']):
 for i,json_serializable_cn in enumerate(results_for_query['candidate_networks']):
     candidate_network = CandidateNetwork.from_json_serializable(json_serializable_cn)
     json_cn = json.dumps(json_serializable_cn,indent=4)
-    sql_cn = candidate_network.get_sql_from_cn(mapper.index_handler.schema_graph)
+    sql_cn = candidate_network.get_sql_from_cn(lathe.index_handler.schema_graph)
     print(f'{i+1} CN:\n{candidate_network}')   
     # print(f'JSON:\n{json_cn}\n')
-    # print(f'SQL:\n{sql_cn}\n')
+    print(f'SQL:\n{sql_cn}\n')

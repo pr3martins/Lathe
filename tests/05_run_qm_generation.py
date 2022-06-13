@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from k2db.utils import ConfigHandler
-from k2db.mapper import Mapper
-from k2db.evaluation import EvaluationHandler
+from pylathedb.utils import ConfigHandler
+from pylathedb.lathe import Lathe
+from pylathedb.evaluation import EvaluationHandler
 
 config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
@@ -28,9 +28,9 @@ for topk_cns_per_qm in topk_cns_per_qm_list:
             for qsconfig_name,qsconfig_filepath in queryset_configs:
 
                 config = ConfigHandler(reset = True,queryset_config_filepath=qsconfig_filepath)
-                mapper = Mapper()
+                lathe = Lathe()
                 evaluation_handler = EvaluationHandler()
-                mapper.load_queryset()
+                lathe.get_queryset()
                 evaluation_handler.load_golden_standards()
 
                 print(f"Running queryset {config.queryset_name} with {approach} approach")
@@ -38,7 +38,7 @@ for topk_cns_per_qm in topk_cns_per_qm_list:
                 results_filepath = f'{config.results_directory}{output_results_subfolder}{config.queryset_name}-{approach}.json'
                 Path(f'{config.results_directory}{output_results_subfolder}').mkdir(parents=True, exist_ok=True)
 
-                results = mapper.run_queryset(
+                results = lathe.run_queryset(
                     skip_cn_generations=skip_cn_generations,
                     weight_scheme=weight_scheme,
                     max_num_query_matches=max_num_query_matches,

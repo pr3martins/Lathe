@@ -1,7 +1,7 @@
-from k2db.evaluation import EvaluationHandler
-from k2db.utils import ConfigHandler
-from k2db.index import IndexHandler
-from k2db.database import DatabaseHandler
+from pylathedb.evaluation import EvaluationHandler
+from pylathedb.utils import ConfigHandler
+from pylathedb.index import IndexHandler
+from pylathedb.database import DatabaseHandler
 
 config = ConfigHandler()
 queryset_configs = config.get_queryset_configs()
